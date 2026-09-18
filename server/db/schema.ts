@@ -16,6 +16,7 @@ import {
 export const coupleStatusEnum = pgEnum('couple_status', ['pending', 'active', 'paused', 'archived'])
 export const activityStatusEnum = pgEnum('activity_status', ['pending', 'revealed'])
 export const memberRoleEnum = pgEnum('member_role', ['partner_a', 'partner_b'])
+export const tokenTypeEnum = pgEnum('auth_token_type', ['email_verification', 'password_reset'])
 
 // 1. Usuarios
 export const users = pgTable('users', {
@@ -23,6 +24,9 @@ export const users = pgTable('users', {
   email: varchar('email', { length: 255 }).unique().notNull(),
   displayName: varchar('display_name', { length: 120 }).notNull(),
   avatarUrl: text('avatar_url'),
+  passwordHash: text('password_hash'),
+  googleId: varchar('google_id', { length: 255 }).unique(),
+  emailVerified: boolean('email_verified').default(false).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 })
@@ -134,5 +138,53 @@ export const idempotencyKeys = pgTable(
   },
   (t) => [
     index('idx_idempotency_user').on(t.userId),
+  ]
+)
+
+// 9. Sesiones
+export const sessions = pgTable(
+  'sessions',
+  {
+    id: varchar('id', { length: 64 }).primaryKey(), // SHA-256(raw_session_token)
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('idx_sessions_user_id').on(t.userId),
+    index('idx_sessions_expires_at').on(t.expiresAt),
+  ]
+)
+
+// 10. Rate Limiting (Soporta claves 'ip:login:email', 'email:login:<email>', 'ip:register', 'ip:resend')
+export const loginAttempts = pgTable(
+  'login_attempts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    identifier: varchar('identifier', { length: 255 }).unique().notNull(),
+    attemptCount: integer('attempt_count').default(1).notNull(),
+    lockedUntil: timestamp('locked_until', { withTimezone: true }),
+    lastAttemptAt: timestamp('last_attempt_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('idx_login_attempts_locked_until').on(t.lockedUntil),
+  ]
+)
+
+// 11. Tokens de Autenticación
+export const authTokens = pgTable(
+  'auth_tokens',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+    tokenHash: varchar('token_hash', { length: 64 }).notNull(), // SHA-256
+    type: tokenTypeEnum('type').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    usedAt: timestamp('used_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('idx_auth_tokens_hash').on(t.tokenHash),
+    index('idx_auth_tokens_user').on(t.userId),
   ]
 )

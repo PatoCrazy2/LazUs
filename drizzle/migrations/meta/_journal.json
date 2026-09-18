@@ -8,6 +8,13 @@
       "when": 1789699637457,
       "tag": "0000_certain_microchip",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789707169701,
+      "tag": "0001_yellow_jasper_sitwell",
+      "breakpoints": true
     }
   ]
 }
