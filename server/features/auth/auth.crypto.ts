@@ -15,9 +15,9 @@ export function timingSafeEqual(a: string, b: string): boolean {
   return result === 0
 }
 
-// Convertir ArrayBuffer a cadena hexadecimal
-export function bufferToHex(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer)
+// Convertir ArrayBuffer o Uint8Array a cadena hexadecimal
+export function bufferToHex(buffer: ArrayBufferLike | Uint8Array): string {
+  const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer)
   return Array.from(bytes)
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('')
@@ -41,7 +41,7 @@ export function getRandomBytes(size: number): Uint8Array {
 
 // Generar token aleatorio en formato hexadecimal seguro (longitud = bytes * 2)
 export function generateRandomToken(bytes = 32): string {
-  return bufferToHex(getRandomBytes(bytes).buffer)
+  return bufferToHex(getRandomBytes(bytes))
 }
 
 // Generar hash SHA-256 de una cadena
@@ -98,7 +98,7 @@ export async function hashPassword(password: string): Promise<string> {
   const derivedBits = await crypto.subtle.deriveBits(
     {
       name: 'PBKDF2',
-      salt,
+      salt: salt as unknown as BufferSource,
       iterations: PBKDF2_ITERATIONS,
       hash: 'SHA-256',
     },
@@ -106,7 +106,7 @@ export async function hashPassword(password: string): Promise<string> {
     PBKDF2_KEY_LEN * 8
   )
 
-  const saltHex = bufferToHex(salt.buffer)
+  const saltHex = bufferToHex(salt)
   const hashHex = bufferToHex(derivedBits)
 
   return `pbkdf2:sha256:${PBKDF2_ITERATIONS}:${saltHex}:${hashHex}`
@@ -152,7 +152,7 @@ export async function verifyPassword(
   const derivedBits = await crypto.subtle.deriveBits(
     {
       name: 'PBKDF2',
-      salt,
+      salt: salt as unknown as BufferSource,
       iterations,
       hash: 'SHA-256',
     },
