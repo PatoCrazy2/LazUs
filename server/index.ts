@@ -21,6 +21,9 @@ app.use(
   })
 )
 
+import { activitiesRouter } from './features/activities/activities.routes'
+import { affectionRouter } from './features/affection/affection.routes'
+
 // Base API healthcheck endpoint
 app.get('/api/health', (c) => {
   return c.json({
@@ -30,5 +33,9 @@ app.get('/api/health', (c) => {
     environment: c.env.ENVIRONMENT || 'development',
   })
 })
+
+// Rutas modulares por Features
+app.route('/api/activities', activitiesRouter)
+app.route('/api/affection', affectionRouter)
 
 export default app
