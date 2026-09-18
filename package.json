@@ -9,7 +9,10 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "deploy": "pnpm run build && wrangler deploy"
+    "deploy": "pnpm run build && wrangler deploy",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.9.1",
@@ -19,9 +22,11 @@
     "clsx": "^2.1.1",
     "dexie": "^4.4.6",
     "dexie-react-hooks": "^4.4.0",
+    "drizzle-orm": "^0.45.2",
     "framer-motion": "^13.4.0",
     "hono": "^4.13.8",
     "lucide-react": "^1.47.0",
+    "pg": "^8.23.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "tailwind-merge": "^3.7.0",
@@ -33,9 +38,12 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260918.1",
     "@types/node": "^24.13.3",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
+    "dotenv": "^18.0.0",
+    "drizzle-kit": "^0.31.10",
     "oxlint": "^1.81.0",
     "typescript": "~6.0.2",
     "vite": "^8.3.0",
