@@ -1,5 +1,6 @@
 export * from './schemas/common.schema'
 export * from './schemas/auth.schema'
+export * from './schemas/couple.schema'
 
 // Eventos de WebSocket seguros (Durable Objects) — Cero filtrado de secretos
 export type SafeRealtimeEvent =

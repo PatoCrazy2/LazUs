@@ -44,9 +44,8 @@ export const SendAffectionInputSchema = z.object({
 
 export type SendAffectionInput = z.infer<typeof SendAffectionInputSchema>
 
-// Contrato de resolución de NFC Tag
-export const ResolveNfcTagInputSchema = z.object({
-  tag_identifier: z.string().min(1).max(128),
-})
+import { ClaimTagInputSchema } from './couple.schema'
 
+// Contrato de resolución de NFC Tag (alias de ClaimTagInputSchema como fuente única)
+export const ResolveNfcTagInputSchema = ClaimTagInputSchema
 export type ResolveNfcTagInput = z.infer<typeof ResolveNfcTagInputSchema>
