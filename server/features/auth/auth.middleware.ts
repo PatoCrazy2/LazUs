@@ -10,6 +10,12 @@ const SLIDING_WINDOW_MS = 7 * 24 * 60 * 60 * 1000 // Si restan menos de 7 días
 const EXTENSION_TIME_MS = 30 * 24 * 60 * 60 * 1000 // Extender a 30 días
 
 export interface AuthContextVariables {
+  user: AuthUserDto
+  sessionId: string
+  rawSessionToken: string
+}
+
+export interface OptionalAuthContextVariables {
   user?: AuthUserDto
   sessionId?: string
   rawSessionToken?: string
