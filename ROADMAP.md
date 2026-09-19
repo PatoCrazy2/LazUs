@@ -22,7 +22,7 @@
 ## 🗺️ Hitos de Desarrollo (Vertical Slices)
 
 ```text
-[ ] Hito 1: Autenticación Híbrida y Sesión (feature/auth)
+[x] Hito 1: Autenticación Híbrida y Sesión (feature/auth)
 [ ] Hito 2: Emparejamiento de Pareja y NFC Linking (feature/couple)
 [ ] Hito 3: Catálogo de Actividades y Blind Reveal (feature/activities)
 [ ] Hito 4: Tiempo Real con Durable Objects (feature/realtime)
@@ -33,9 +33,9 @@
 
 ---
 
-### [🔄] Hito 1: Autenticación Híbrida y Gestión de Sesión (`feature/auth`)
+### [✅] Hito 1: Autenticación Híbrida y Gestión de Sesión (`feature/auth`)
 
-**Objetivo:** Permitir a los usuarios registrarse e iniciar sesión de forma segura sin coste de licencias, manteniendo su sesión activa de forma persistente y resiliente offline.
+**Objetivo:** Permitir a los usuarios registrarse e iniciar sesión de forma segura sin coste de licencias, manteniendo su sesión activa de forma persistente y resiliente offline con estética de producción móvil.
 
 #### ✅ Fase 1: Backend, Persistencia Offline y Tests (COMPLETADA)
 - [x] **Esquema PostgreSQL con Drizzle:** Tablas `users`, `sessions`, `login_attempts`, `auth_tokens` con índices, migraciones y tipos.
@@ -50,7 +50,7 @@
 - [x] **Persistencia Offline (Dexie):** Tabla local `profile` sincronizada vía `authStore` y hook reactivo `useAuth`.
 - [x] **Suite Exhaustiva de Pruebas Automatizadas:** 17 suites y 64 tests pasando (100% éxito) con Vitest en modo secuencial (`fileParallelism: false`) incluyendo pruebas de aislamiento ante `staleTime` y timeout de seguridad.
 
-#### ⏳ Fase 2: Componentes UI Visuales e Integración (EN PROGRESO)
+#### ✅ Fase 2: Componentes UI Visuales, Integración y PWA Shell (COMPLETADA)
 - [x] **Enrutamiento Tipado y Guards Desacoplados (TanStack Router):**
   - Implementación de `src/router.tsx` con rutas públicas (`/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email`) y privadas protegidas (`/`).
   - Guards desacoplados de `isLoading` gobernados determinísticamente por `hasResolvedInitialAuth` y timeout de seguridad de 4s.
@@ -59,8 +59,14 @@
   - Integración con el hook `useAuth` (`login`, `register`, `logout`) y persistencia sincronizada en Dexie.
 - [x] **Feedback Visual & Manejo de Errores:**
   - Visualización reactiva de errores de negocio, banner de email sin verificar (`UnverifiedEmailBanner`), pantalla dual de verificación (`VerifyEmailCard`) y temporizador de cuenta regresiva por rate limiting 429 (`Retry-After`).
-- [ ] **Restauración Visual 100% Fiel de Diseños Stitch / Google AI Studio (SIGUIENTE PASO):**
-  - Aplicar fielmente el diseño exportado en Stitch: fondo blanco puro (`#FFFFFF`), tipografía `#18181B`, ribbons SVG animados (`#FF5C7A`, `#8B5CF6`), botón specular de grafito con highlight de 1px e inputs translúcidos con borde `#EAEAEA`.
+- [x] **Restauración Visual 100% Fiel de Diseños Stitch / Google AI Studio:**
+  - Fondo blanco puro (`#FFFFFF`), tipografía `#18181B`, ambient ribbons generativos SVG flotantes (`#FF5C7A`, `#8B5CF6`) con línea punteada adaptativa solo desktop/tablet (`hidden md:inline`).
+  - Botón *specular* de grafito con highlight de 1px e inputs translúcidos con borde `#EAEAEA` y estados de foco limpios.
+  - Botón de Google Auth translúcido con icono oficial multi-color.
+  - Safe-areas móviles nativas (`pt-safe`, `pb-safe`, `viewport-fit=cover`) eliminando barras simuladas obsoletas.
+  - Copys y placeholders optimizados: distinción estricta de registro de usuario individual ("Crea tu cuenta", "Crear cuenta") previo al emparejamiento, y placeholders consistentes (`tu@correo.com`, `Tu nombre`, `Tu contraseña`).
+- [x] **Optimización de Metadatos PWA y Webmanifest para Producción:**
+  - Idioma `<html lang="es">`, metadato moderno `<meta name="mobile-web-app-capable" content="yes">`, `apple-mobile-web-app-title`, `format-detection="telephone=no"`, y sincronización de colores `#FFFFFF` en `vite.config.ts`.
 
 ---
 
