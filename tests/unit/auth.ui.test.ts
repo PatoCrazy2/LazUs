@@ -12,7 +12,6 @@ import {
   AuthSplash,
   ForgotPasswordModal,
   GoogleAuthButton,
-  IosChrome,
   LoginForm,
   RegisterForm,
   ResetPasswordForm,
@@ -27,9 +26,6 @@ describe('Auth UI Feature Contract and Schema Guard Tests', () => {
       expect(AuthLayout).toBeDefined()
       expect(AuthSplash).toBeDefined()
       expect(GoogleAuthButton).toBeDefined()
-      expect(IosChrome).toBeDefined()
-      expect(IosChrome.StatusBar).toBeDefined()
-      expect(IosChrome.HomeIndicator).toBeDefined()
       expect(LoginForm).toBeDefined()
       expect(RegisterForm).toBeDefined()
       expect(ForgotPasswordModal).toBeDefined()

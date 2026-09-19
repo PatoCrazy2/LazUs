@@ -3,7 +3,7 @@ import { RouterProvider } from '@tanstack/react-router'
 import { motion } from 'framer-motion'
 import { Heart, LogOut, Sparkles, User, Wifi } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { AmbientRibbons, IosChrome, UnverifiedEmailBanner } from './features/auth/components'
+import { AmbientRibbons, UnverifiedEmailBanner } from './features/auth/components'
 import { useAuth } from './features/auth/hooks/useAuth'
 import { authenticatedRoute, router } from './router'
 
@@ -25,9 +25,8 @@ export function DashboardPage() {
   const [hearts, setHearts] = useState(0)
 
   return (
-    <div className="relative min-h-[100dvh] w-full flex flex-col justify-between overflow-x-hidden bg-[#080c14] text-white">
+    <div className="relative min-h-[100dvh] w-full flex flex-col justify-between overflow-x-hidden bg-[#080c14] text-white pt-safe pb-safe">
       <AmbientRibbons />
-      <IosChrome.StatusBar />
 
       {/* Top Banner if email is not yet verified */}
       <UnverifiedEmailBanner />
@@ -97,8 +96,6 @@ export function DashboardPage() {
       <footer className="w-full text-xs text-slate-500 py-3 border-t border-white/5 text-center relative z-10">
         React 19 • TanStack Router • Dexie • Cloudflare
       </footer>
-
-      <IosChrome.HomeIndicator />
     </div>
   )
 }

@@ -2,7 +2,6 @@ import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { Heart } from 'lucide-react'
 import { AmbientRibbons } from './AmbientRibbons'
-import { IosChrome } from './IosChrome'
 
 /**
  * High-performance anti-flicker splash screen rendered during initial authentication
@@ -10,9 +9,8 @@ import { IosChrome } from './IosChrome'
  */
 export const AuthSplash = memo(function AuthSplash() {
   return (
-    <div className="relative min-h-[100dvh] w-full flex flex-col items-center justify-between overflow-hidden bg-white text-[#18181B] select-none">
+    <div className="relative min-h-[100dvh] w-full flex flex-col items-center justify-between overflow-hidden bg-white text-[#18181B] select-none pt-safe pb-safe">
       <AmbientRibbons pulseActive={true} />
-      <IosChrome.StatusBar />
 
       <main className="relative z-10 my-auto flex flex-col items-center gap-6 px-6 text-center">
         {/* Soft pulsing emblem */}
@@ -44,8 +42,6 @@ export const AuthSplash = memo(function AuthSplash() {
           />
         </div>
       </main>
-
-      <IosChrome.HomeIndicator />
     </div>
   )
 })
