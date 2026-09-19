@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
-import { ArrowLeft, CheckCircle2, Loader2, Lock, Mail } from 'lucide-react'
-import { useState } from 'react'
+import { ArrowLeft, CheckCircle2, Loader2, Lock, Mail, Send } from 'lucide-react'
+import React, { useState } from 'react'
 import { ForgotPasswordInputSchema } from '../../../../shared'
 import { AuthApiError, authApi } from '../api/auth.api'
 import { useRetryAfterCountdown } from '../hooks/useRetryAfterCountdown'
@@ -51,52 +51,56 @@ export function ForgotPasswordModal() {
   }
 
   return (
-    <div className="w-full max-w-sm mx-auto">
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold tracking-tight text-white">
-          Recuperar Contraseña
-        </h1>
-        <p className="text-sm text-slate-400 mt-1.5">
-          Te enviaremos un enlace seguro para restablecer tu acceso
-        </p>
-      </div>
+    <div className="w-full max-w-[390px] mx-auto flex-1 flex flex-col justify-between py-2">
+      {/* Encabezado */}
+      <section className="space-y-4">
+        <div className="text-center pt-8 pb-3 space-y-1.5">
+          <h1 className="text-[34px] leading-tight font-bold tracking-tight text-[#18181B]">
+            Recuperar Contraseña
+          </h1>
+          <p className="text-[15px] font-normal text-[#71717A] tracking-normal">
+            Te enviaremos un enlace seguro para restablecer tu acceso
+          </p>
+        </div>
+      </section>
 
-      <div className="glass-panel p-6 sm:p-8 rounded-3xl space-y-6">
+      {/* Contenido principal */}
+      <section className="space-y-4 my-auto pt-1 pb-1">
         {isSubmitted ? (
-          <div className="text-center space-y-4 py-2">
-            <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-6 h-6" />
+          <div className="text-center space-y-5 py-4 px-2">
+            <div className="w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-7 h-7" />
             </div>
             <div className="space-y-1.5">
-              <h2 className="text-base font-semibold text-white">
+              <h2 className="text-lg font-semibold text-[#18181B]">
                 Revisa tu bandeja de entrada
               </h2>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Si existe una cuenta asociada a <span className="font-medium text-white">{email}</span>, hemos enviado un enlace de recuperación.
+              <p className="text-[13.5px] text-[#71717A] leading-relaxed">
+                Si existe una cuenta asociada a <span className="font-medium text-[#18181B]">{email}</span>, hemos enviado un enlace de recuperación.
               </p>
             </div>
 
             <div className="pt-2">
               <Link
                 to="/login"
-                className="specular-button w-full py-3.5 rounded-2xl text-white font-medium text-sm inline-flex items-center justify-center gap-2"
+                className="specular-button w-full h-12 rounded-[15px] text-white text-[14.5px] font-medium tracking-tight inline-flex items-center justify-center gap-2 active:scale-[0.985] transition-transform"
               >
                 Volver al inicio de sesión
               </Link>
             </div>
           </div>
         ) : (
-          <>
+          <div className="space-y-4 pt-1">
             {/* 429 Rate Limit Warning Banner */}
             {isRateLimited && (
               <div
                 role="alert"
-                className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center gap-2.5 animate-pulse"
+                className="p-3.5 rounded-[15px] bg-amber-500/10 border border-amber-500/20 text-amber-900 text-xs flex items-center gap-2.5 animate-pulse"
               >
-                <Lock className="w-4 h-4 shrink-0 text-amber-400" />
+                <Lock className="w-4 h-4 shrink-0 text-amber-600" />
                 <div>
                   <p className="font-semibold">Solicitudes en pausa</p>
-                  <p className="text-amber-300/80">
+                  <p className="text-amber-800/90">
                     Podrás volver a intentar en <span className="font-mono font-bold">{formattedTime}</span>
                   </p>
                 </div>
@@ -107,22 +111,20 @@ export function ForgotPasswordModal() {
             {serverError && !isRateLimited && (
               <div
                 role="alert"
-                className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-medium"
+                className="p-3 rounded-[15px] bg-rose-500/10 border border-rose-500/20 text-rose-800 text-xs font-medium"
               >
                 {serverError}
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            <form onSubmit={handleSubmit} className="space-y-3" noValidate>
               <div>
-                <label htmlFor="forgot-email" className="sr-only">
-                  Correo Electrónico
-                </label>
-                <div className="relative">
-                  <Mail
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
-                    aria-hidden="true"
-                  />
+                <div
+                  className={`bg-white/50 backdrop-blur-md border rounded-[15px] px-3.5 h-12 flex items-center gap-3 shadow-sm focus-within:border-[#18181B]/40 focus-within:bg-white transition-all ${
+                    fieldError ? 'border-rose-500/60' : 'border-[#EAEAEA]/80'
+                  }`}
+                >
+                  <Mail className="w-4 h-4 text-[#A1A1AA] flex-shrink-0" strokeWidth={1.8} aria-hidden="true" />
                   <input
                     id="forgot-email"
                     type="email"
@@ -134,47 +136,51 @@ export function ForgotPasswordModal() {
                       if (fieldError) setFieldError(null)
                     }}
                     disabled={isSubmitting || isRateLimited}
-                    placeholder="tu@correo.com"
-                    className={`glass-input w-full pl-10 pr-4 py-3 rounded-2xl text-sm text-white placeholder-slate-500 disabled:opacity-50 disabled:cursor-not-allowed ${
-                      fieldError ? 'border-rose-500/60 focus:border-rose-500' : ''
-                    }`}
+                    placeholder="tu@lazus.app"
+                    className="w-full bg-transparent border-0 p-0 text-[14.5px] text-[#18181B] placeholder-[#A1A1AA] focus:ring-0 focus:outline-none disabled:opacity-50"
                   />
                 </div>
                 {fieldError && (
-                  <p className="text-rose-400 text-xs mt-1.5 pl-1">{fieldError}</p>
+                  <p className="text-rose-600 text-xs mt-1 pl-1 font-medium">{fieldError}</p>
                 )}
               </div>
 
-              <button
-                type="submit"
-                disabled={isSubmitting || isRateLimited}
-                className="specular-button w-full py-3.5 rounded-2xl text-white font-medium text-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed mt-2"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Enviando enlace...</span>
-                  </>
-                ) : isRateLimited ? (
-                  <span>Espera {formattedTime}</span>
-                ) : (
-                  <span>Enviar instrucciones</span>
-                )}
-              </button>
+              <div className="pt-1">
+                <button
+                  type="submit"
+                  disabled={isSubmitting || isRateLimited}
+                  className="specular-button w-full h-12 rounded-[15px] text-white text-[14.5px] font-medium tracking-tight flex items-center justify-center gap-2 active:scale-[0.985] transition-transform cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      <span>Enviando enlace...</span>
+                    </>
+                  ) : isRateLimited ? (
+                    <span>Espera {formattedTime}</span>
+                  ) : (
+                    <>
+                      <span>Enviar instrucciones</span>
+                      <Send className="w-4 h-4 text-white/90" strokeWidth={1.8} />
+                    </>
+                  )}
+                </button>
+              </div>
             </form>
-          </>
+          </div>
         )}
-      </div>
+      </section>
 
-      <div className="text-center mt-6">
+      {/* Footer */}
+      <footer className="pt-2 pb-1 text-center">
         <Link
           to="/login"
-          className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors"
+          className="inline-flex items-center gap-1.5 text-[13px] text-[#71717A] hover:text-[#18181B] transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Volver al inicio de sesión
         </Link>
-      </div>
+      </footer>
     </div>
   )
 }

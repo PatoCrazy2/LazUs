@@ -1,6 +1,6 @@
 import { Link, useNavigate } from '@tanstack/react-router'
-import { Check, Eye, EyeOff, Loader2, Lock, Mail, User, X } from 'lucide-react'
-import { useState } from 'react'
+import { ArrowRight, Check, Eye, EyeOff, Loader2, Lock, Mail, User, X } from 'lucide-react'
+import React, { useState } from 'react'
 import { RegisterInputSchema } from '../../../../shared'
 import { AuthApiError } from '../api/auth.api'
 import { useAuth } from '../hooks/useAuth'
@@ -69,232 +69,240 @@ export function RegisterForm() {
   }
 
   return (
-    <div className="w-full max-w-sm mx-auto">
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold tracking-tight text-white">
-          Crea tu espacio
-        </h1>
-        <p className="text-sm text-slate-400 mt-1.5">
-          Comienza una historia íntima y privada con tu pareja
-        </p>
-      </div>
-
-      <div className="glass-panel p-6 sm:p-8 rounded-3xl space-y-6">
-        {/* Google OAuth Option */}
-        <GoogleAuthButton
-          label="Registrarse con Google"
-          disabled={isRegistering || isRateLimited}
-        />
-
-        <div className="relative flex items-center justify-center">
-          <div className="border-t border-white/10 w-full" />
-          <span className="bg-[#0f172a]/90 px-3 text-[11px] font-medium tracking-wider uppercase text-slate-400 shrink-0">
-            o con tu correo
-          </span>
+    <div className="w-full max-w-[390px] mx-auto flex-1 flex flex-col justify-between py-2">
+      {/* Encabezado Stitch */}
+      <section className="space-y-4">
+        <div className="text-center pt-8 pb-3 space-y-1.5">
+          <h1 className="text-[34px] leading-tight font-bold tracking-tight text-[#18181B]">
+            Crea tu espacio
+          </h1>
+          <p className="text-[15px] font-normal text-[#71717A] tracking-normal">
+            El comienzo de una historia compartida.
+          </p>
         </div>
+      </section>
 
-        {/* 429 Rate Limit Warning Banner */}
-        {isRateLimited && (
-          <div
-            role="alert"
-            className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center gap-2.5 animate-pulse"
-          >
-            <Lock className="w-4 h-4 shrink-0 text-amber-400" />
+      {/* Formulario */}
+      <section className="space-y-4 my-auto pt-1 pb-1">
+        <div className="space-y-4 pt-1">
+          {/* Botón de Google */}
+          <GoogleAuthButton
+            label="Registrarse con Google"
+            disabled={isRegistering || isRateLimited}
+          />
+
+          {/* Separador "o" */}
+          <div className="relative py-0.5 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-[#EAEAEA]/70" />
+            </div>
+            <span className="relative bg-white/80 backdrop-blur-sm px-3 text-[12px] text-[#A1A1AA] font-mono">
+              o
+            </span>
+          </div>
+
+          {/* 429 Rate Limit Warning Banner */}
+          {isRateLimited && (
+            <div
+              role="alert"
+              className="p-3.5 rounded-[15px] bg-amber-500/10 border border-amber-500/20 text-amber-900 text-xs flex items-center gap-2.5 animate-pulse"
+            >
+              <Lock className="w-4 h-4 shrink-0 text-amber-600" />
+              <div>
+                <p className="font-semibold">Registro pausado por seguridad</p>
+                <p className="text-amber-800/90">
+                  Podrás volver a intentar en <span className="font-mono font-bold">{formattedTime}</span>
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Server Error Message */}
+          {serverError && !isRateLimited && (
+            <div
+              role="alert"
+              className="p-3 rounded-[15px] bg-rose-500/10 border border-rose-500/20 text-rose-800 text-xs font-medium"
+            >
+              {serverError}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-3" noValidate>
+            {/* Display Name Field */}
             <div>
-              <p className="font-semibold">Registro pausado por seguridad</p>
-              <p className="text-amber-300/80">
-                Podrás volver a intentar en <span className="font-mono font-bold">{formattedTime}</span>
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Server Error Message */}
-        {serverError && !isRateLimited && (
-          <div
-            role="alert"
-            className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-medium"
-          >
-            {serverError}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          {/* Display Name Field */}
-          <div>
-            <label htmlFor="register-name" className="sr-only">
-              Tu nombre o apodo
-            </label>
-            <div className="relative">
-              <User
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
-                aria-hidden="true"
-              />
-              <input
-                id="register-name"
-                type="text"
-                autoComplete="name"
-                required
-                value={displayName}
-                onChange={(e) => {
-                  setDisplayName(e.target.value)
-                  if (fieldErrors.displayName) {
-                    setFieldErrors((prev) => ({ ...prev, displayName: undefined }))
-                  }
-                }}
-                disabled={isRegistering || isRateLimited}
-                placeholder="¿Cómo te llama tu pareja?"
-                className={`glass-input w-full pl-10 pr-4 py-3 rounded-2xl text-sm text-white placeholder-slate-500 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  fieldErrors.displayName ? 'border-rose-500/60 focus:border-rose-500' : ''
+              <div
+                className={`bg-white/50 backdrop-blur-md border rounded-[15px] px-3.5 h-12 flex items-center gap-3 shadow-sm focus-within:border-[#18181B]/40 focus-within:bg-white transition-all ${
+                  fieldErrors.displayName ? 'border-rose-500/60' : 'border-[#EAEAEA]/80'
                 }`}
-              />
-            </div>
-            {fieldErrors.displayName && (
-              <p className="text-rose-400 text-xs mt-1.5 pl-1">{fieldErrors.displayName}</p>
-            )}
-          </div>
-
-          {/* Email Field */}
-          <div>
-            <label htmlFor="register-email" className="sr-only">
-              Correo Electrónico
-            </label>
-            <div className="relative">
-              <Mail
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
-                aria-hidden="true"
-              />
-              <input
-                id="register-email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value)
-                  if (fieldErrors.email) {
-                    setFieldErrors((prev) => ({ ...prev, email: undefined }))
-                  }
-                }}
-                disabled={isRegistering || isRateLimited}
-                placeholder="tu@correo.com"
-                className={`glass-input w-full pl-10 pr-4 py-3 rounded-2xl text-sm text-white placeholder-slate-500 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  fieldErrors.email ? 'border-rose-500/60 focus:border-rose-500' : ''
-                }`}
-              />
-            </div>
-            {fieldErrors.email && (
-              <p className="text-rose-400 text-xs mt-1.5 pl-1">{fieldErrors.email}</p>
-            )}
-          </div>
-
-          {/* Password Field */}
-          <div>
-            <label htmlFor="register-password" className="sr-only">
-              Contraseña
-            </label>
-            <div className="relative">
-              <Lock
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
-                aria-hidden="true"
-              />
-              <input
-                id="register-password"
-                type={showPassword ? 'text' : 'password'}
-                autoComplete="new-password"
-                required
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value)
-                  if (fieldErrors.password) {
-                    setFieldErrors((prev) => ({ ...prev, password: undefined }))
-                  }
-                }}
-                disabled={isRegistering || isRateLimited}
-                placeholder="Crea una contraseña segura"
-                className={`glass-input w-full pl-10 pr-11 py-3 rounded-2xl text-sm text-white placeholder-slate-500 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  fieldErrors.password ? 'border-rose-500/60 focus:border-rose-500' : ''
-                }`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
-                tabIndex={-1}
-                aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 focus:outline-none"
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                <User className="w-4 h-4 text-[#A1A1AA] flex-shrink-0" strokeWidth={1.8} aria-hidden="true" />
+                <input
+                  id="register-name"
+                  type="text"
+                  autoComplete="name"
+                  required
+                  value={displayName}
+                  onChange={(e) => {
+                    setDisplayName(e.target.value)
+                    if (fieldErrors.displayName) {
+                      setFieldErrors((prev) => ({ ...prev, displayName: undefined }))
+                    }
+                  }}
+                  disabled={isRegistering || isRateLimited}
+                  placeholder="¿Cómo te llama tu pareja?"
+                  className="w-full bg-transparent border-0 p-0 text-[14.5px] text-[#18181B] placeholder-[#A1A1AA] focus:ring-0 focus:outline-none disabled:opacity-50"
+                />
+              </div>
+              {fieldErrors.displayName && (
+                <p className="text-rose-600 text-xs mt-1 pl-1 font-medium">{fieldErrors.displayName}</p>
+              )}
+            </div>
+
+            {/* Email Field */}
+            <div>
+              <div
+                className={`bg-white/50 backdrop-blur-md border rounded-[15px] px-3.5 h-12 flex items-center gap-3 shadow-sm focus-within:border-[#18181B]/40 focus-within:bg-white transition-all ${
+                  fieldErrors.email ? 'border-rose-500/60' : 'border-[#EAEAEA]/80'
+                }`}
+              >
+                <Mail className="w-4 h-4 text-[#A1A1AA] flex-shrink-0" strokeWidth={1.8} aria-hidden="true" />
+                <input
+                  id="register-email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value)
+                    if (fieldErrors.email) {
+                      setFieldErrors((prev) => ({ ...prev, email: undefined }))
+                    }
+                  }}
+                  disabled={isRegistering || isRateLimited}
+                  placeholder="tu@lazus.app"
+                  className="w-full bg-transparent border-0 p-0 text-[14.5px] text-[#18181B] placeholder-[#A1A1AA] focus:ring-0 focus:outline-none disabled:opacity-50"
+                />
+              </div>
+              {fieldErrors.email && (
+                <p className="text-rose-600 text-xs mt-1 pl-1 font-medium">{fieldErrors.email}</p>
+              )}
+            </div>
+
+            {/* Password Field */}
+            <div>
+              <div
+                className={`bg-white/50 backdrop-blur-md border rounded-[15px] px-3.5 h-12 flex items-center gap-3 shadow-sm focus-within:border-[#18181B]/40 focus-within:bg-white transition-all ${
+                  fieldErrors.password ? 'border-rose-500/60' : 'border-[#EAEAEA]/80'
+                }`}
+              >
+                <Lock className="w-4 h-4 text-[#A1A1AA] flex-shrink-0" strokeWidth={1.8} aria-hidden="true" />
+                <input
+                  id="register-password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  required
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value)
+                    if (fieldErrors.password) {
+                      setFieldErrors((prev) => ({ ...prev, password: undefined }))
+                    }
+                  }}
+                  disabled={isRegistering || isRateLimited}
+                  placeholder="Crea una contraseña segura"
+                  className="w-full bg-transparent border-0 p-0 text-[14.5px] text-[#18181B] placeholder-[#A1A1AA] focus:ring-0 focus:outline-none disabled:opacity-50"
+                />
+                {/* Control interactivo con contraste WCAG 1.4.11 (>= 3:1) */}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                  className="text-[#71717A] hover:text-[#18181B] focus:text-[#18181B] p-1 transition-colors cursor-pointer"
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" strokeWidth={1.8} />
+                  ) : (
+                    <Eye className="w-4 h-4" strokeWidth={1.8} />
+                  )}
+                </button>
+              </div>
+              {fieldErrors.password && (
+                <p className="text-rose-600 text-xs mt-1 pl-1 font-medium">{fieldErrors.password}</p>
+              )}
+
+              {/* Password strength checklist (Stitch light style) */}
+              <div className="mt-2.5 p-3 rounded-[15px] bg-white/60 backdrop-blur-sm border border-[#EAEAEA]/80 space-y-1.5 text-[11.5px]">
+                <div className="flex items-center gap-1.5">
+                  {hasMinLength ? (
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  ) : (
+                    <X className="w-3.5 h-3.5 text-[#A1A1AA]" />
+                  )}
+                  <span className={hasMinLength ? 'text-emerald-800 font-medium' : 'text-[#71717A]'}>
+                    Al menos 8 caracteres
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {hasLetter ? (
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  ) : (
+                    <X className="w-3.5 h-3.5 text-[#A1A1AA]" />
+                  )}
+                  <span className={hasLetter ? 'text-emerald-800 font-medium' : 'text-[#71717A]'}>
+                    Al menos una letra
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {hasNumber ? (
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  ) : (
+                    <X className="w-3.5 h-3.5 text-[#A1A1AA]" />
+                  )}
+                  <span className={hasNumber ? 'text-emerald-800 font-medium' : 'text-[#71717A]'}>
+                    Al menos un número
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <div className="pt-1">
+              <button
+                type="submit"
+                disabled={isRegistering || isRateLimited}
+                className="specular-button w-full h-12 rounded-[15px] text-white text-[14.5px] font-medium tracking-tight flex items-center justify-center gap-2 active:scale-[0.985] transition-transform cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isRegistering ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <span>Creando tu espacio...</span>
+                  </>
+                ) : isRateLimited ? (
+                  <span>Espera {formattedTime}</span>
+                ) : (
+                  <>
+                    <span>Vincular pareja</span>
+                    <ArrowRight className="w-4 h-4 text-white/90" strokeWidth={2} />
+                  </>
+                )}
               </button>
             </div>
-            {fieldErrors.password && (
-              <p className="text-rose-400 text-xs mt-1.5 pl-1">{fieldErrors.password}</p>
-            )}
-
-            {/* Password strength checklist */}
-            <div className="mt-3 p-3 rounded-xl bg-slate-900/40 border border-white/5 space-y-1.5 text-[11px]">
-              <div className="flex items-center gap-1.5">
-                {hasMinLength ? (
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                ) : (
-                  <X className="w-3.5 h-3.5 text-slate-500" />
-                )}
-                <span className={hasMinLength ? 'text-emerald-300' : 'text-slate-400'}>
-                  Al menos 8 caracteres
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                {hasLetter ? (
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                ) : (
-                  <X className="w-3.5 h-3.5 text-slate-500" />
-                )}
-                <span className={hasLetter ? 'text-emerald-300' : 'text-slate-400'}>
-                  Al menos una letra
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                {hasNumber ? (
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                ) : (
-                  <X className="w-3.5 h-3.5 text-slate-500" />
-                )}
-                <span className={hasNumber ? 'text-emerald-300' : 'text-slate-400'}>
-                  Al menos un número
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={isRegistering || isRateLimited}
-            className="specular-button w-full py-3.5 rounded-2xl text-white font-medium text-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed mt-2"
-          >
-            {isRegistering ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Creando tu espacio...</span>
-              </>
-            ) : isRateLimited ? (
-              <span>Espera {formattedTime}</span>
-            ) : (
-              <span>Crear cuenta</span>
-            )}
-          </button>
-        </form>
-      </div>
+          </form>
+        </div>
+      </section>
 
       {/* Switch to Login */}
-      <p className="text-center text-xs text-slate-400 mt-6">
-        ¿Ya tienen una cuenta?{' '}
-        <Link
-          to="/login"
-          className="font-semibold text-rose-400 hover:text-rose-300 underline underline-offset-4"
-        >
-          Iniciar sesión
-        </Link>
-      </p>
+      <footer className="pt-2 pb-1 space-y-1.5 text-center">
+        <p className="text-[13px] text-[#71717A]">
+          ¿Ya tienen una cuenta?
+          <Link
+            to="/login"
+            className="font-medium text-[#18181B] hover:underline underline-offset-2 ml-1"
+          >
+            Iniciar sesión
+          </Link>
+        </p>
+      </footer>
     </div>
   )
 }
