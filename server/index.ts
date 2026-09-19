@@ -5,11 +5,19 @@ import { sql } from 'drizzle-orm'
 import { getDb } from './db'
 import { activitiesRouter } from './features/activities/activities.routes'
 import { affectionRouter } from './features/affection/affection.routes'
+import { authRouter } from './features/auth/auth.routes'
+import { AuthService } from './features/auth/auth.service'
 
 export type Bindings = {
   ENVIRONMENT?: string
   ASSETS?: Fetcher
   DATABASE_URL?: string
+  AUTH_SECRET?: string
+  GOOGLE_CLIENT_ID?: string
+  GOOGLE_CLIENT_SECRET?: string
+  RESEND_API_KEY?: string
+  RESEND_FROM_EMAIL?: string
+  APP_BASE_URL?: string
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -58,7 +66,22 @@ app.get('/api/health', async (c) => {
 })
 
 // Rutas modulares por Features
+app.route('/api/auth', authRouter)
 app.route('/api/activities', activitiesRouter)
 app.route('/api/affection', affectionRouter)
 
+// Handler de Cloudflare Cron Trigger (§2.6) para limpieza de datos caducados
+export const scheduledHandler = async (_event: any, env: Bindings, _ctx?: any) => {
+  const dbUrl = env?.DATABASE_URL || process.env.DATABASE_URL
+  const db = getDb(dbUrl)
+  const authService = new AuthService(db)
+  const result = await authService.cleanupExpiredAuthData()
+  console.info('[Scheduled] Limpieza periódica de auth ejecutada:', result)
+  return result
+}
+
+;(app as any).scheduled = scheduledHandler
+
+export { app }
 export default app
+

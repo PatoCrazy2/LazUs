@@ -8,6 +8,8 @@ export interface LocalProfile {
   displayName: string;
   avatarUrl?: string;
   coupleId?: string;
+  emailVerified?: boolean;
+  hasPassword?: boolean;
 }
 
 export interface LocalCouple {
