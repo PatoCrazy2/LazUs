@@ -131,12 +131,28 @@ La autenticación de LazUs sigue los estándares más estrictos de seguridad edg
 
 ---
 
-## 6. Tests Automatizados y Calidad de Código
+## 6. Arquitectura de Emparejamiento y Tags NFC (Hito 2: `feature/couple`)
+
+LazUs implementa un ritual de vinculación íntimo y sin fricción técnica:
+
+- **Auto-Asignación Mágica JIT (Sin Botones):** Al aproximar el móvil a una pulsera virgen que no existe en BD o no tiene dueño, el backend la identifica en tiempo real como `{ type: 'nfc_tag', state: 'unclaimed' }` y la PWA la auto-reclama de inmediato vía `POST /api/couple/claim-tag` asignando `owner_user_id`.
+- **Inferencia Inteligente de Formato:** El backend distingue automáticamente tags físicos de códigos digitales (`/^LZ-[A-Z0-9]{4,8}$/i`) sin requerir pre-registro manual de identificadores.
+- **Ritual de Unión Atómico con Bloqueo Concurrente:** La unión entre dos miembros se ejecuta en una única transacción PostgreSQL:
+  1. Bloqueo de filas de usuario mediante `FOR UPDATE` para neutralizar carreras.
+  2. Validación estricta de pertenencia única: si alguno ya tiene pareja activa, se captura el error y se mapea a `CoupleConflictError` $\rightarrow$ respuesta HTTP `409 Conflict`.
+  3. Creación de la pareja (`couples`), asignación de los 2 miembros (`couple_members` como `partner_a` y `partner_b`) y vinculación automática de ambas pulseras `nfc_tags` al nuevo `couple_id`.
+- **Garantía de Idempotencia en el Borde:** Soporte para reintentos de red del Outbox mediante `client_mutation_id` almacenado en `idempotency_keys`, respondiendo con éxito (200) sin duplicar entidades.
+- **Respaldo Digital Híbrido:** Para contingencias o parejas a distancia, el sistema genera códigos temporales de 24h (`LZ-XXXXXX`) utilizando la Web Crypto API nativa en Cloudflare Workers.
+- **Inspección de Enlaces con Autenticación Opcional:** `optionalAuthMiddleware` permite que las URLs de deep linking (`/link/:identifier`) sean resueltas tanto por usuarios anónimos como autenticados sin rechazos prematuros 401.
+
+---
+
+## 7. Tests Automatizados y Calidad de Código
 
 El proyecto cuenta con una suite completa de pruebas unitarias, de integración, middleware y seguridad ejecutadas secuencialmente (`fileParallelism: false`) para garantizar aislamiento por `TRUNCATE`:
 
 ```bash
-# Ejecutar la suite completa de tests (64 tests / 17 suites)
+# Ejecutar la suite completa de tests (76 tests / 18 suites)
 pnpm test
 
 # Comprobar linter sin errores
@@ -147,7 +163,7 @@ pnpm run build
 ```
 
 ### Matriz de Pruebas Implementada:
-- **Helpers:** `tests/helpers/db.ts` (TRUNCATE en cascada y variables de entorno de prueba).
+- **Helpers:** `tests/helpers/db.ts` (TRUNCATE en cascada de todas las tablas y variables de entorno de prueba).
 - **Unitarias:**
   - `tests/unit/auth.crypto.test.ts`: PBKDF2 (tolerancia a null), `timingSafeEqual`, HMAC-SHA256, SHA-256 tokens y PKCE RFC 7636.
   - `tests/unit/auth.cleanup.test.ts`: Purga periódica de intentos, tokens y sesiones caducadas.
@@ -159,6 +175,7 @@ pnpm run build
 - **Middleware:**
   - `tests/middleware/auth.middleware.test.ts`: Tokens válidos/manipulados, sliding expiration y código 401.
 - **API & Integración:**
+  - `tests/api/couple.pairing.test.ts`: Auto-discovery JIT, auto-claim de pulsera, reconocimiento propio, vinculación atómica, idempotencia, rechazo de autovinculación, conflictos concurrentes 409, invitaciones digitales `LZ-XXXX` y aislamiento de BD.
   - `tests/api/auth.email.test.ts`: Register, login, concurrencia (409 Conflict), logout y endpoint `GET /me`.
   - `tests/api/auth.takeover.test.ts`: Neutralización atómica de squatting y revocación de sesiones (Caso B).
   - `tests/api/auth.google.test.ts`: Flujo PKCE, verificación de estado HMAC y UserInfo de Google.
@@ -171,7 +188,7 @@ pnpm run build
 
 ---
 
-## 7. Estructura del Proyecto (Vertical Slice Architecture)
+## 8. Estructura del Proyecto (Vertical Slice Architecture)
 
 ```text
 LazUs/
@@ -180,11 +197,11 @@ LazUs/
 │   ├── rules/                  # Reglas del Blind Reveal, Offline y Arquitectura
 │   └── skills/                 # Runbooks (/db-migrate, /feature-scaffold, etc.)
 │
-├── docs/plans/                 # Especificaciones técnicas canónicas (01_FEATURE_AUTH_SPEC.md)
-├── drizzle/migrations/         # Migraciones SQL declarativas generadas
+├── docs/plans/                 # Especificaciones técnicas (01_FEATURE_AUTH_SPEC.md, 03_FEATURE_COUPLE_BACKEND_PLAN.md)
+├── drizzle/migrations/         # Migraciones SQL declarativas generadas (0000, 0001, 0002)
 │
 ├── shared/                     # Código y contratos compartidos (Edge & Browser)
-│   ├── schemas/                # Validaciones Zod: common y auth.schema.ts
+│   ├── schemas/                # Validaciones Zod: common, auth y couple.schema.ts
 │   └── index.ts                # Eventos WebSocket seguros y tipos DTO
 │
 ├── server/                     # Backend Hono en Cloudflare Workers
@@ -192,6 +209,7 @@ LazUs/
 │   ├── db/                     # Conexión Drizzle y schema.ts autoritativo
 │   └── features/               # Slices modulares de backend
 │       ├── auth/               # crypto, email, repository, service, middleware, routes
+│       ├── couple/             # repository (FOR UPDATE), service (JIT resolve), errors, routes
 │       ├── activities/         # submission y reglas de Blind Reveal
 │       └── affection/          # eventos de afecto y toques NFC
 │
@@ -199,10 +217,7 @@ LazUs/
 │   ├── db/                     # Dexie.js local y motor Outbox con Dead-Letter Queue
 │   ├── features/               # Slices modulares de frontend
 │   │   ├── auth/               # api, store offline en Dexie, hook useAuth y componentes UI
-│   │   │   ├── api/            # authClient fetcher tipado
-│   │   │   ├── components/     # LoginForm, RegisterForm, Modales, Cards, AmbientRibbons, IosChrome
-│   │   │   ├── hooks/          # useAuth (hasResolvedInitialAuth + safety timeout)
-│   │   │   └── store/          # authStore con persistencia en Dexie
+│   │   ├── couple/             # vinculación, ritual de unión y estado de pulseras
 │   │   ├── activities/         # hooks de envío y visualización
 │   │   └── affection/          # hooks de toques hápticos y afecto
 │   ├── router.tsx              # Árbol de rutas tipadas (TanStack Router) con guards guest/auth
@@ -222,7 +237,7 @@ LazUs/
 
 ---
 
-## 8. Referencias Canónicas
+## 9. Referencias Canónicas
 
 Para profundizar en las decisiones de diseño y arquitectura, consulta los documentos de especificación:
 - [00_PROJECT_CONTEXT.md](00_PROJECT_CONTEXT.md): Identidad, tono emocional y modelo de dominio.

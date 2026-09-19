@@ -23,7 +23,7 @@
 
 ```text
 [x] Hito 1: Autenticación Híbrida y Sesión (feature/auth)
-[ ] Hito 2: Emparejamiento de Pareja y NFC Linking (feature/couple)
+[🔄] Hito 2: Emparejamiento de Pareja y NFC Linking (feature/couple) — Backend Completado
 [ ] Hito 3: Catálogo de Actividades y Blind Reveal (feature/activities)
 [ ] Hito 4: Tiempo Real con Durable Objects (feature/realtime)
 [ ] Hito 5: Rutas NFC y Toque de Afecto Háptico (feature/nfc)
@@ -70,23 +70,26 @@
 
 ---
 
-### [ ] Hito 2: Emparejamiento de Pareja y Vinculación NFC (`feature/couple`)
+### [🔄] Hito 2: Emparejamiento de Pareja y Vinculación NFC (`feature/couple`)
 
-**Objetivo:** Conectar a los dos miembros de la relación en una entidad única `couple_id` mediante su pulsera física o un enlace de invitación.
+**Objetivo:** Conectar a los dos miembros de la relación en una entidad única `couple_id` mediante su pulsera física o un enlace de invitación con UX de 1 confirmación y auto-asignación sin botones.
 
-#### Criterios de Aceptación:
-- [ ] **Generación de Invitación:**
-  - Usuario A genera un enlace/código de invitación único (`/link/:tagId` o código de 6 caracteres).
-  - La URL puede grabarse físicamente en la pulsera NFC o enviarse por WhatsApp/mensajería.
-- [ ] **Aceptación e Idempotencia:**
-  - Usuario B abre el enlace y ve una pantalla de confirmación: *"¿Deseas vincular tu cuenta con [Nombre de A]?"*.
-  - Al aceptar, la base de datos ejecuta una transacción atómica:
-    - Crea la fila en `couples`.
-    - Inserta exactamente 2 miembros en `couple_members` (`partner_a`, `partner_b`).
-  - Si el enlace ya fue reclamado o expiró, responde con error claro y controlado.
-- [ ] **Persistencia Local:**
-  - Guardar el estado de la pareja en Dexie (`couple` table) para acceso instantáneo.
-- [ ] **Tests:** Pruebas unitarias de la transacción de vinculación impidiendo que un usuario pertenezca a dos parejas activas a la vez.
+#### ✅ Fase 1: Backend, DB, Idempotencia y Tests (COMPLETADA)
+- [x] **Contratos Zod Compartidos (`shared/schemas/couple.schema.ts`):** DTOs canónicos (`ResolveIdentifierResponseSchema`, `ClaimTagInputSchema`, `PairCoupleInputSchema`, `PairCoupleResponseSchema`, `CreateInviteCodeResponseSchema`, `CurrentCoupleResponseSchema`).
+- [x] **Esquema PostgreSQL y Migración 0002:** Tabla `couple_invitations`, índices de rendimiento en `nfc_tags` (`idx_nfc_tags_owner`, `idx_nfc_tags_couple`) y migración declarativa aplicada.
+- [x] **Middleware de Autenticación Opcional (`optionalAuthMiddleware`):** Permite inspeccionar tags y códigos de deep links anónimamente o identificando al usuario actual sin emitir 401.
+- [x] **Auto-asignación JIT y Detección de Formato:** Inferencia inteligente en backend (`/^LZ-[A-Z0-9]{4,8}$/i`) para tags físicos vírgenes vs códigos digitales de respaldo sin pre-registro.
+- [x] **Transacción Atómica de Vinculación con Bloqueo Concurrente:** Bloqueo `FOR UPDATE` en PostgreSQL, prevención de doble pareja (mapeo del error PG `23505` a `CoupleConflictError` $\rightarrow$ 409 Conflict), inserción de 2 miembros (`partner_a`, `partner_b`) y asociación de pulseras `nfc_tags`.
+- [x] **Idempotencia en el Borde:** Registro de `client_mutation_id` en `idempotency_keys` para reintentos transparentes sin duplicación de parejas.
+- [x] **Rutas Edge Hono (`/api/couple`):** Endpoints `/resolve/:identifier`, `/claim-tag`, `/pair`, `/current` y `/invite-code` montados y validados.
+- [x] **Suite Exhaustiva de Tests de Integración:** 12 casos de prueba cubriendo auto-discovery, auto-claim, vinculación atómica, 409 Conflict, idempotencia, códigos digitales y purga en `tests/api/couple.pairing.test.ts`.
+
+#### ⏳ Fase 2: Frontend PWA, Store Dexie, Rutas TanStack y UI de Vinculación (PENDIENTE)
+- [ ] **Persistencia Local y Sincronización en Dexie:** Tablas locales para estado de pareja y pulseras asociadas.
+- [ ] **Rutas y Deep Linking con TanStack Router:** Manejo de rutas `/link/:identifier` y visualización adaptativa.
+- [ ] **Flujo de Auto-claim Silencioso:** Asignación automática de pulseras vírgenes en segundo plano sin botones confusos.
+- [ ] **El Ritual de Unión (UI):** Pantalla de confirmación instantánea con 1 toque ("¿Vincularte con [Nombre]?").
+- [ ] **Respaldo Digital (UI):** Generación y compartición de códigos `LZ-XXXX` para contingencia o parejas a distancia.
 
 ---
 
