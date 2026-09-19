@@ -7,7 +7,7 @@ interface GoogleAuthButtonProps {
 }
 
 /**
- * Official Google OAuth button.
+ * Official Google OAuth button styled to 100% fidelity with Stitch design.
  * Dispatches a native full-page browser navigation to /api/auth/google
  * allowing Cloudflare Workers to handle PKCE, HMAC state signing, and 302 redirects natively.
  */
@@ -31,7 +31,7 @@ export const GoogleAuthButton = memo(function GoogleAuthButton({
       onClick={handleGoogleSignIn}
       disabled={disabled || isRedirecting}
       aria-label={label}
-      className={`w-full relative flex items-center justify-center gap-3 px-4 py-3.5 rounded-2xl font-medium text-sm text-slate-200 bg-slate-900/80 hover:bg-slate-850 border border-slate-700/60 hover:border-slate-600 transition-all duration-200 active:scale-[0.985] disabled:opacity-50 disabled:cursor-not-allowed shadow-sm ${className}`}
+      className={`w-full h-12 bg-white/60 backdrop-blur-md border border-[#EAEAEA]/90 rounded-[15px] text-[#18181B] text-[14.5px] font-medium flex items-center justify-center gap-2.5 shadow-sm active:scale-[0.985] active:bg-white/80 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
     >
       <svg
         className="w-4 h-4 shrink-0"
