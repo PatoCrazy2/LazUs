@@ -22,6 +22,6 @@ export function getTestEnv() {
 export async function truncateAuthTables(client?: DbClient) {
   const db = client || getDb(getTestEnv().DATABASE_URL)
   await db.execute(
-    sql`TRUNCATE TABLE users, sessions, auth_tokens, login_attempts, couples, couple_members, daily_activities, submissions, affection_events, idempotency_keys CASCADE;`
+    sql`TRUNCATE TABLE users, sessions, auth_tokens, login_attempts, couples, couple_members, nfc_tags, couple_invitations, daily_activities, submissions, affection_events, idempotency_keys CASCADE;`
   )
 }
