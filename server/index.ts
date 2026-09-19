@@ -6,6 +6,7 @@ import { getDb } from './db'
 import { activitiesRouter } from './features/activities/activities.routes'
 import { affectionRouter } from './features/affection/affection.routes'
 import { authRouter } from './features/auth/auth.routes'
+import { coupleRouter } from './features/couple/couple.routes'
 import { AuthService } from './features/auth/auth.service'
 
 export type Bindings = {
@@ -67,6 +68,7 @@ app.get('/api/health', async (c) => {
 
 // Rutas modulares por Features
 app.route('/api/auth', authRouter)
+app.route('/api/couple', coupleRouter)
 app.route('/api/activities', activitiesRouter)
 app.route('/api/affection', affectionRouter)
 
