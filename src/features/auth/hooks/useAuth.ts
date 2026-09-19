@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import type { LoginInput, RegisterInput } from '../../../../shared'
 import { authApi } from '../api/auth.api'
 import { authStore } from '../store/auth.store'
@@ -12,7 +12,7 @@ export function useAuth() {
   // Consulta de perfil en servidor con sincronización local en Dexie
   const {
     data,
-    isLoading,
+    isLoading: isServerLoading,
     isError,
     error,
     refetch,
@@ -23,9 +23,24 @@ export function useAuth() {
         const response = await authApi.getMe()
         await authStore.saveProfile(response.user)
         return response.user
-      } catch (err: any) {
-        if (err.status === 401) {
+      } catch (err: unknown) {
+        // Invariant 1.2: Solo un HTTP 401 explícito revoca el perfil local en Dexie
+        const status = (err as { status?: number })?.status
+        if (status === 401) {
           await authStore.clearProfile()
+          throw err
+        }
+        // Fallos de red o 5xx: intentar recuperar el perfil de Dexie para mantener al usuario autenticado offline
+        const localUser = await authStore.getProfile()
+        if (localUser) {
+          return {
+            id: localUser.id,
+            email: localUser.email,
+            displayName: localUser.displayName,
+            avatarUrl: localUser.avatarUrl || null,
+            emailVerified: localUser.emailVerified ?? false,
+            hasPassword: localUser.hasPassword ?? true,
+          }
         }
         throw err
       }
@@ -34,23 +49,26 @@ export function useAuth() {
     staleTime: 5 * 60 * 1000, // 5 minutos de validez en memoria
   })
 
-  // Sincronización proactiva al montar si la red no está disponible
+  const [isLocalLoading, setIsLocalLoading] = useState(true)
+
+  // Sincronización proactiva instantánea desde Dexie al montar
   useEffect(() => {
-    if (!data) {
-      void authStore.getProfile().then((localUser) => {
-        if (localUser && !data) {
-          queryClient.setQueryData(AUTH_QUERY_KEY, {
-            id: localUser.id,
-            email: localUser.email,
-            displayName: localUser.displayName,
-            avatarUrl: localUser.avatarUrl || null,
-            emailVerified: localUser.emailVerified ?? false,
-            hasPassword: localUser.hasPassword ?? true,
-          })
-        }
-      })
-    }
-  }, [data, queryClient])
+    void authStore.getProfile().then((localUser) => {
+      if (localUser && !queryClient.getQueryData(AUTH_QUERY_KEY)) {
+        queryClient.setQueryData(AUTH_QUERY_KEY, {
+          id: localUser.id,
+          email: localUser.email,
+          displayName: localUser.displayName,
+          avatarUrl: localUser.avatarUrl || null,
+          emailVerified: localUser.emailVerified ?? false,
+          hasPassword: localUser.hasPassword ?? true,
+        })
+      }
+      setIsLocalLoading(false)
+    }).catch(() => {
+      setIsLocalLoading(false)
+    })
+  }, [queryClient])
 
   // Mutación de Login
   const loginMutation = useMutation({
@@ -84,6 +102,8 @@ export function useAuth() {
     },
   })
 
+  const isLoading = (isServerLoading && !data) || isLocalLoading
+
   return {
     user: data || null,
     isLoading,
@@ -99,3 +119,5 @@ export function useAuth() {
     isLoggingOut: logoutMutation.isPending,
   }
 }
+export type AuthContextValue = ReturnType<typeof useAuth>
+
