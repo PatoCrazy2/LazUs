@@ -40,16 +40,16 @@ export const UnverifiedEmailBanner = memo(function UnverifiedEmailBanner() {
       className="w-full bg-amber-500/10 border-b border-amber-500/20 px-4 py-2.5 backdrop-blur-md relative z-20"
     >
       <div className="max-w-md mx-auto flex items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-2 text-amber-300 min-w-0">
-          <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
+        <div className="flex items-center gap-2 text-amber-900 min-w-0">
+          <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
           <span className="truncate">
-            Verifica tu correo (<span className="font-medium text-white">{user.email}</span>) para proteger tu cuenta.
+            Verifica tu correo (<span className="font-medium text-[#18181B]">{user.email}</span>) para proteger tu cuenta.
           </span>
         </div>
 
         <div className="shrink-0 flex items-center">
           {hasSent ? (
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400">
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
               <CheckCircle2 className="w-3.5 h-3.5" />
               ¡Enviado!
             </span>
@@ -58,7 +58,7 @@ export const UnverifiedEmailBanner = memo(function UnverifiedEmailBanner() {
               type="button"
               onClick={handleResend}
               disabled={isSending}
-              className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 hover:text-white border border-amber-500/30 text-[11px] font-medium transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              className="px-2.5 py-1 rounded-[10px] bg-amber-500/15 hover:bg-amber-500/25 text-amber-900 border border-amber-500/30 text-[11px] font-medium transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
               {isSending ? (
                 <>
@@ -77,7 +77,7 @@ export const UnverifiedEmailBanner = memo(function UnverifiedEmailBanner() {
       </div>
 
       {sendError && (
-        <div className="max-w-md mx-auto mt-1 text-[10px] text-rose-400 text-center">
+        <div className="max-w-md mx-auto mt-1 text-[10px] text-rose-600 text-center font-medium">
           {sendError}
         </div>
       )}

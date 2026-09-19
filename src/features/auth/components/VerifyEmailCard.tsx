@@ -1,6 +1,6 @@
 import { Link, useNavigate, useSearch } from '@tanstack/react-router'
-import { AlertCircle, CheckCircle2, Loader2, Mail, Send, ShieldCheck } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { AlertCircle, ArrowRight, CheckCircle2, Loader2, Mail, Send, ShieldCheck } from 'lucide-react'
+import React, { useEffect, useState } from 'react'
 import { VerifyEmailInputSchema } from '../../../../shared'
 import { AuthApiError, authApi } from '../api/auth.api'
 import { useAuth } from '../hooks/useAuth'
@@ -89,28 +89,32 @@ export function VerifyEmailCard() {
   }
 
   return (
-    <div className="w-full max-w-sm mx-auto">
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold tracking-tight text-white">
-          Verificación de Correo
-        </h1>
-        <p className="text-sm text-slate-400 mt-1.5">
-          Protegiendo la privacidad de su espacio
-        </p>
-      </div>
+    <div className="w-full max-w-[390px] mx-auto flex-1 flex flex-col justify-between py-2">
+      {/* Encabezado Stitch */}
+      <section className="space-y-4">
+        <div className="text-center pt-8 pb-3 space-y-1.5">
+          <h1 className="text-[34px] leading-tight font-bold tracking-tight text-[#18181B]">
+            Verificación de Correo
+          </h1>
+          <p className="text-[15px] font-normal text-[#71717A] tracking-normal">
+            Protegiendo la privacidad de su espacio
+          </p>
+        </div>
+      </section>
 
-      <div className="glass-panel p-6 sm:p-8 rounded-3xl space-y-6">
+      {/* Contenido principal */}
+      <section className="space-y-4 my-auto pt-1 pb-1">
         {isVerified ? (
           /* Case A: Success */
-          <div className="text-center space-y-4 py-2">
-            <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-6 h-6" />
+          <div className="text-center space-y-5 py-4 px-2">
+            <div className="w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-7 h-7" />
             </div>
             <div className="space-y-1.5">
-              <h2 className="text-base font-semibold text-white">
+              <h2 className="text-lg font-semibold text-[#18181B]">
                 ¡Correo verificado con éxito!
               </h2>
-              <p className="text-xs text-slate-300 leading-relaxed">
+              <p className="text-[13.5px] text-[#71717A] leading-relaxed">
                 Tu cuenta está completamente validada y segura.
               </p>
             </div>
@@ -120,30 +124,32 @@ export function VerifyEmailCard() {
                 <button
                   type="button"
                   onClick={() => void navigate({ to: '/' })}
-                  className="specular-button w-full py-3.5 rounded-2xl text-white font-medium text-sm flex items-center justify-center cursor-pointer"
+                  className="specular-button w-full h-12 rounded-[15px] text-white text-[14.5px] font-medium tracking-tight flex items-center justify-center gap-2 active:scale-[0.985] transition-transform cursor-pointer"
                 >
-                  Continuar a nuestro espacio
+                  <span>Continuar a nuestro espacio</span>
+                  <ArrowRight className="w-4 h-4 text-white/90" strokeWidth={2} />
                 </button>
               ) : (
                 <Link
                   to="/login"
-                  className="specular-button w-full py-3.5 rounded-2xl text-white font-medium text-sm inline-flex items-center justify-center"
+                  className="specular-button w-full h-12 rounded-[15px] text-white text-[14.5px] font-medium tracking-tight inline-flex items-center justify-center gap-2 active:scale-[0.985] transition-transform"
                 >
-                  Iniciar sesión
+                  <span>Iniciar sesión</span>
+                  <ArrowRight className="w-4 h-4 text-white/90" strokeWidth={2} />
                 </Link>
               )}
             </div>
           </div>
         ) : verifyError || !token ? (
           /* Case B: Invalid or expired token -> Dual Recovery Flow */
-          <div className="space-y-5">
-            <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+          <div className="space-y-4 pt-1">
+            <div className="flex items-start gap-3 p-3.5 rounded-[15px] bg-amber-500/10 border border-amber-500/20 text-amber-900 text-xs">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
               <div>
                 <p className="font-semibold">
                   {!token ? 'Enlace incompleto' : 'Enlace expirado o inválido'}
                 </p>
-                <p className="text-amber-300/80 mt-0.5">
+                <p className="text-amber-800/90 mt-0.5">
                   {!token
                     ? 'No detectamos un token en la dirección del enlace.'
                     : 'Este enlace de verificación ya fue utilizado o ha caducado.'}
@@ -152,17 +158,17 @@ export function VerifyEmailCard() {
             </div>
 
             {resendSuccess ? (
-              <div className="text-center space-y-3 py-2">
-                <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
-                  <CheckCircle2 className="w-5 h-5" />
+              <div className="text-center space-y-3 py-4 px-2">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="w-6 h-6" />
                 </div>
-                <p className="text-xs text-slate-300">
+                <p className="text-[13.5px] text-[#71717A]">
                   Hemos enviado un nuevo enlace a tu correo. Revisa tu bandeja de entrada o spam.
                 </p>
                 {isAuthenticated && (
                   <Link
                     to="/"
-                    className="inline-block text-xs text-rose-400 hover:text-rose-300 font-medium"
+                    className="inline-block text-[13px] text-[#18181B] font-medium hover:underline underline-offset-2"
                   >
                     Volver a mi espacio
                   </Link>
@@ -171,7 +177,7 @@ export function VerifyEmailCard() {
             ) : (
               <div className="space-y-4">
                 {resendError && (
-                  <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-medium">
+                  <div className="p-3 rounded-[15px] bg-rose-500/10 border border-rose-500/20 text-rose-800 text-xs font-medium">
                     {resendError}
                   </div>
                 )}
@@ -179,31 +185,31 @@ export function VerifyEmailCard() {
                 {isAuthenticated && user ? (
                   /* Authenticated 1-click resend without typing email */
                   <div className="space-y-3">
-                    <p className="text-xs text-slate-300">
-                      ¿Deseas que te enviemos un nuevo enlace a <span className="font-semibold text-white">{user.email}</span>?
+                    <p className="text-[13.5px] text-[#71717A]">
+                      ¿Deseas que te enviemos un nuevo enlace a <span className="font-semibold text-[#18181B]">{user.email}</span>?
                     </p>
                     <button
                       type="button"
                       onClick={handleResend}
                       disabled={isResending}
-                      className="specular-button w-full py-3 rounded-2xl text-white font-medium text-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                      className="specular-button w-full h-12 rounded-[15px] text-white text-[14.5px] font-medium tracking-tight flex items-center justify-center gap-2 active:scale-[0.985] transition-transform cursor-pointer disabled:opacity-50"
                     >
                       {isResending ? (
                         <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <Loader2 className="w-4 h-4 animate-spin text-white" />
                           <span>Enviando enlace...</span>
                         </>
                       ) : (
                         <>
-                          <Send className="w-3.5 h-3.5" />
                           <span>Reenviar nuevo enlace</span>
+                          <Send className="w-4 h-4 text-white/90" strokeWidth={1.8} />
                         </>
                       )}
                     </button>
-                    <div className="text-center">
+                    <div className="text-center pt-1">
                       <Link
                         to="/"
-                        className="text-xs text-slate-400 hover:text-slate-200 transition-colors"
+                        className="text-[13px] text-[#71717A] hover:text-[#18181B] transition-colors"
                       >
                         Ir a mi espacio por ahora
                       </Link>
@@ -212,12 +218,13 @@ export function VerifyEmailCard() {
                 ) : (
                   /* Unauthenticated resend: provide email field */
                   <form onSubmit={handleResend} className="space-y-3">
-                    <p className="text-xs text-slate-300">
+                    <p className="text-[13.5px] text-[#71717A]">
                       Ingresa tu correo para recibir un nuevo enlace de activación:
                     </p>
-                    <div className="relative">
+                    <div className="bg-white/50 backdrop-blur-md border border-[#EAEAEA]/80 rounded-[15px] px-3.5 h-12 flex items-center gap-3 shadow-sm focus-within:border-[#18181B]/40 focus-within:bg-white transition-all">
                       <Mail
-                        className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
+                        className="w-4 h-4 text-[#A1A1AA] flex-shrink-0"
+                        strokeWidth={1.8}
                         aria-hidden="true"
                       />
                       <input
@@ -225,22 +232,25 @@ export function VerifyEmailCard() {
                         required
                         value={resendEmail}
                         onChange={(e) => setResendEmail(e.target.value)}
-                        placeholder="tu@correo.com"
-                        className="glass-input w-full pl-10 pr-4 py-2.5 rounded-2xl text-xs text-white placeholder-slate-500"
+                        placeholder="tu@lazus.app"
+                        className="w-full bg-transparent border-0 p-0 text-[14.5px] text-[#18181B] placeholder-[#A1A1AA] focus:ring-0 focus:outline-none"
                       />
                     </div>
                     <button
                       type="submit"
                       disabled={isResending || !resendEmail}
-                      className="specular-button w-full py-3 rounded-2xl text-white font-medium text-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                      className="specular-button w-full h-12 rounded-[15px] text-white text-[14.5px] font-medium tracking-tight flex items-center justify-center gap-2 active:scale-[0.985] transition-transform cursor-pointer disabled:opacity-50"
                     >
                       {isResending ? (
                         <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <Loader2 className="w-4 h-4 animate-spin text-white" />
                           <span>Solicitando enlace...</span>
                         </>
                       ) : (
-                        <span>Enviar nuevo enlace</span>
+                        <>
+                          <span>Enviar nuevo enlace</span>
+                          <Send className="w-4 h-4 text-white/90" strokeWidth={1.8} />
+                        </>
                       )}
                     </button>
                   </form>
@@ -250,47 +260,53 @@ export function VerifyEmailCard() {
           </div>
         ) : (
           /* Case C: Valid initial token state -> Interactive POST Confirmation */
-          <div className="text-center space-y-5 py-2">
-            <div className="w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto">
-              <ShieldCheck className="w-6 h-6" />
+          <div className="text-center space-y-5 py-4 px-2">
+            <div className="w-14 h-14 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-600 flex items-center justify-center mx-auto">
+              <ShieldCheck className="w-7 h-7" />
             </div>
 
             <div className="space-y-1.5">
-              <h2 className="text-base font-semibold text-white">
+              <h2 className="text-lg font-semibold text-[#18181B]">
                 Confirma tu correo
               </h2>
-              <p className="text-xs text-slate-300 leading-relaxed">
+              <p className="text-[13.5px] text-[#71717A] leading-relaxed">
                 Presiona el botón a continuación para verificar tu cuenta y activar la sincronización completa.
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={handleVerify}
-              disabled={isVerifying}
-              className="specular-button w-full py-3.5 rounded-2xl text-white font-medium text-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-lg"
-            >
-              {isVerifying ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Verificando tu cuenta...</span>
-                </>
-              ) : (
-                <span>Confirmar mi correo</span>
-              )}
-            </button>
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={handleVerify}
+                disabled={isVerifying}
+                className="specular-button w-full h-12 rounded-[15px] text-white text-[14.5px] font-medium tracking-tight flex items-center justify-center gap-2 active:scale-[0.985] transition-transform cursor-pointer disabled:opacity-50"
+              >
+                {isVerifying ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <span>Verificando tu cuenta...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Confirmar mi correo</span>
+                    <ArrowRight className="w-4 h-4 text-white/90" strokeWidth={2} />
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         )}
-      </div>
+      </section>
 
-      <div className="text-center mt-6">
+      {/* Footer */}
+      <footer className="pt-2 pb-1 text-center">
         <Link
           to="/"
-          className="text-xs text-slate-400 hover:text-slate-200 transition-colors"
+          className="text-[13px] text-[#71717A] hover:text-[#18181B] transition-colors"
         >
           Volver a la aplicación
         </Link>
-      </div>
+      </footer>
     </div>
   )
 }
