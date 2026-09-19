@@ -20,9 +20,10 @@ LazUs **no es** una red social ni una app de citas. Su propósito es fortalecer 
 | Capa | Tecnologías | Responsabilidad |
 | :--- | :--- | :--- |
 | **Frontend** | React 19, Vite, TypeScript | SPA PWA, micro-interacciones, animaciones móviles. |
+| **Tooling & Runtime** | `@cloudflare/vite-plugin` (v1.56+) | Integración de Hono/Workers en Vite bajo un proceso único (`workerd`). |
 | **Estilos & UI** | TailwindCSS v4, Framer Motion, Lucide | Interfaz íntima, moderna y háptica. |
-| **Enrutamiento** | TanStack Router | Enrutamiento tipado y deep linking para NFC. |
-| **Estado Remoto** | TanStack Query | Caching, reintentos y mutaciones optimistas. |
+| **Enrutamiento** | TanStack Router | Enrutamiento tipado, Context reactivo y deep linking para NFC. |
+| **Estado Remoto** | TanStack Query v5 | Caching, reintentos y desacoplamiento de estado de sincronización. |
 | **DB Local (Offline)** | Dexie.js (IndexedDB) | Persistencia local, velocidad y cola Outbox. |
 | **Service Worker** | Workbox (VitePWA) | Precaching offline y Web Push Notifications. |
 | **Backend API** | Hono | API edge ultraligera en Cloudflare Workers. |
@@ -84,24 +85,21 @@ pnpm run db:migrate
 pnpm run db:studio
 ```
 
-### 6. Ejecutar los Servidores de Desarrollo
+### 6. Ejecutar el Servidor de Desarrollo Unificado
 
-#### Frontend (PWA en Vite):
+Gracias a `@cloudflare/vite-plugin`, el backend de Hono en Cloudflare Workers y la SPA de React se ejecutan en un **único proceso integrado**:
+
 ```bash
 pnpm run dev
 ```
-Abre en tu navegador móvil o escritorio: `http://localhost:5173`.
 
-#### Backend (Cloudflare Worker con Hono):
-En otra terminal:
-```bash
-pnpm run dev:server
-```
-La API estará disponible en `http://localhost:8787`.
+- La aplicación y la API de Hono estarán disponibles de inmediato en: `http://localhost:5173`.
+- El código de Hono (`server/index.ts`) se ejecuta dentro del runtime local real de Cloudflare (`workerd`), leyendo automáticamente las variables y secretos de `.dev.vars`.
+- No requiere proxies manuales ni mantener dos terminales abiertas.
 
-Prueba la conectividad real con la base de datos:
+Prueba la conectividad y estado de la base de datos:
 ```bash
-curl http://localhost:8787/api/health
+curl http://localhost:5173/api/health
 ```
 
 ---
@@ -125,6 +123,11 @@ La autenticación de LazUs sigue los estándares más estrictos de seguridad edg
 - **Envío de Correo Resiliente (Resend):** Envíos no bloqueantes envueltos en `try/catch`. En caso de límites de sandbox o fallos de red, el registro y los tokens persisten en BD y se imprimen en logs en desarrollo sin quebrar la respuesta HTTP.
 - **Mantenimiento Periódico (`cleanupExpiredAuthData`):** Tarea programada en Cloudflare Workers con Cron Trigger (`0 3 * * *`) que purga intentos de login inactivos (>24h), tokens caducados o consumidos, y sesiones expiradas dentro del free-tier ($0/mes).
 - **Persistencia Local Offline (Dexie):** Al autenticarse, el perfil de usuario se sincroniza en la tabla `profile` de IndexedDB mediante `authStore`, permitiendo arranques en frío instantáneos sin conexión.
+- **Desacoplamiento Reactivo (`hasResolvedInitialAuth`):** Resolución determinista del estado inicial de autenticación en un único sentido (`false` $\rightarrow$ `true`). Elimina por completo los bucles de remontaje (`ECONNREFUSED` o ping-pong reactivo) al desacoplar el montaje de rutas (`<Outlet />`) del estado transitorio de carga (`isLoading`/`isFetching`) de TanStack Query v5.
+- **Timeout de Seguridad Anti-Splash Infinito (4s):** `useAuth` incorpora un temporizador de 4 segundos con limpieza atómica (`clearTimeout`) que desbloquea la interfaz de usuario en modo invitado si la red o el backend experimentan latencia severa o fallos de conexión, impidiendo pantallas de carga congeladas.
+- **Validación Zod y Bloqueo por Rate Limit (429):** Formularios UI con validación de esquemas en tiempo real y temporizador de cuenta regresiva reactivo ante respuestas HTTP 429 (`retryAfter`).
+- **Verificación de Email en Dos Pasos (UI):** Componente interactivo que requiere acción explícita del usuario mediante botón POST para evitar invalidación automática por escáneres de correo corporativos.
+- **Purga Atómica de Caché en Logout:** Invalidación instantánea de caché TanStack Query (`queryClient.clear()`) y borrado seguro de IndexedDB (`authStore.clearProfile()`) en cierre de sesión.
 
 ---
 
@@ -133,7 +136,7 @@ La autenticación de LazUs sigue los estándares más estrictos de seguridad edg
 El proyecto cuenta con una suite completa de pruebas unitarias, de integración, middleware y seguridad ejecutadas secuencialmente (`fileParallelism: false`) para garantizar aislamiento por `TRUNCATE`:
 
 ```bash
-# Ejecutar la suite completa de tests (56 tests / 16 suites)
+# Ejecutar la suite completa de tests (64 tests / 17 suites)
 pnpm test
 
 # Comprobar linter sin errores
@@ -151,6 +154,7 @@ pnpm run build
   - `tests/unit/auth.benchmark.test.ts`: Benchmark de CPU para 100k iteraciones PBKDF2 en V8.
   - `tests/unit/auth.schema.test.ts`: Zod estricto, sanitización de emails y reglas de contraseñas.
   - `tests/unit/auth.store.test.ts`: Sincronización offline en IndexedDB con `fake-indexeddb`.
+  - `tests/unit/auth.ui.test.ts`: Aislamiento ante `staleTime` y refetch en segundo plano, timeout de seguridad de 4s, esquemas Zod en UI y cuenta regresiva 429.
   - `tests/unit/schemas.test.ts`: Validación de contratos de dominio y outbox.
 - **Middleware:**
   - `tests/middleware/auth.middleware.test.ts`: Tokens válidos/manipulados, sliding expiration y código 401.
@@ -194,14 +198,20 @@ LazUs/
 ├── src/                        # Frontend PWA (React + Vite)
 │   ├── db/                     # Dexie.js local y motor Outbox con Dead-Letter Queue
 │   ├── features/               # Slices modulares de frontend
-│   │   ├── auth/               # api, store offline en Dexie y hook useAuth
+│   │   ├── auth/               # api, store offline en Dexie, hook useAuth y componentes UI
+│   │   │   ├── api/            # authClient fetcher tipado
+│   │   │   ├── components/     # LoginForm, RegisterForm, Modales, Cards, AmbientRibbons, IosChrome
+│   │   │   ├── hooks/          # useAuth (hasResolvedInitialAuth + safety timeout)
+│   │   │   └── store/          # authStore con persistencia en Dexie
 │   │   ├── activities/         # hooks de envío y visualización
 │   │   └── affection/          # hooks de toques hápticos y afecto
-│   └── App.tsx                 # Shell móvil PWA con animaciones hápticas
+│   ├── router.tsx              # Árbol de rutas tipadas (TanStack Router) con guards guest/auth
+│   ├── App.tsx                 # Shell móvil PWA y TanStack Query Provider
+│   └── index.css               # Estilos globales y keyframes de animaciones
 │
 ├── tests/                      # Suite de tests automatizados (Vitest)
 │   ├── helpers/                # TRUNCATE en cascada y mocks de entorno
-│   ├── unit/                   # Tests unitarios (crypto, cleanup, benchmark, schemas, store)
+│   ├── unit/                   # Tests unitarios (crypto, cleanup, benchmark, schemas, store, ui)
 │   ├── middleware/             # Tests de authMiddleware y sliding expiration
 │   └── api/                    # Tests de integración Hono + PostgreSQL y seguridad
 │

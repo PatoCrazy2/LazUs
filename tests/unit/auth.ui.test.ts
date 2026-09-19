@@ -158,11 +158,14 @@ describe('Auth UI Feature Contract and Schema Guard Tests', () => {
 
       // El usuario deja la app, expira staleTime y TanStack Query dispara refetch en background
       isFetching = true
+      expect(isFetching).toBe(true)
       // El árbol de rutas NO debe alterarse: hasResolvedInitialAuth no debe volver a false
       expect(hasResolvedInitialAuth).toBe(true)
 
       // La query falla en background (por ejemplo por pérdida de red)
       isFetching = false
+      expect(isFetching).toBe(false)
+      // hasResolvedInitialAuth permanece inmutable (nunca vuelve a false durante la sesión)
       expect(hasResolvedInitialAuth).toBe(true)
     })
 
