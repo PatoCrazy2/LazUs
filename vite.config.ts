@@ -14,11 +14,11 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'LazUs — For Couples',
+        name: 'LazUs — Para Parejas',
         short_name: 'LazUs',
-        description: 'Intimate PWA for romantic couples with NFC interactions',
-        theme_color: '#0f172a',
-        background_color: '#0f172a',
+        description: 'Espacio íntimo y privado para dos. Conexión diaria para parejas.',
+        theme_color: '#FFFFFF',
+        background_color: '#FFFFFF',
         display: 'standalone',
         orientation: 'portrait',
         icons: [
