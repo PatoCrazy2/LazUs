@@ -1,74 +1,95 @@
-import { memo } from 'react'
+import React from 'react'
 
 interface AmbientRibbonsProps {
   pulseActive?: boolean
 }
 
-/**
- * Generative SVG backdrop with floating translucent color ribbons
- * inspired by romantic neon/rose and violet hues for LazUs.
- */
-export const AmbientRibbons = memo(function AmbientRibbons({ pulseActive = false }: AmbientRibbonsProps) {
+export const AmbientRibbons: React.FC<AmbientRibbonsProps> = ({ pulseActive = false }) => {
   return (
     <div
-      aria-hidden="true"
-      className="pointer-events-none fixed inset-0 z-0 overflow-hidden select-none"
+      className={`absolute inset-0 pointer-events-none z-0 overflow-hidden transition-all duration-700 ${
+        pulseActive ? 'scale-[1.03]' : 'scale-100'
+      }`}
     >
-      {/* Dynamic backdrop base */}
-      <div className="absolute inset-0 bg-[#080c14]" />
-
-      {/* Top Rose-Amber Ribbon */}
-      <div className="absolute -top-[15%] -right-[20%] w-[650px] h-[650px] rounded-full mix-blend-screen opacity-40 animate-ribbon-top">
-        <svg viewBox="0 0 500 500" className="w-full h-full filter blur-[70px]">
-          <defs>
-            <linearGradient id="roseGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.85" />
-              <stop offset="50%" stopColor="#e11d48" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="#fb7185" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          <path
-            d="M 120,80 Q 300,10 400,160 T 320,380 Q 200,450 90,320 T 120,80 Z"
-            fill="url(#roseGradient)"
-          />
-        </svg>
-      </div>
-
-      {/* Bottom Violet-Indigo Ribbon */}
-      <div className="absolute -bottom-[20%] -left-[15%] w-[700px] h-[700px] rounded-full mix-blend-screen opacity-35 animate-ribbon-bottom">
-        <svg viewBox="0 0 500 500" className="w-full h-full filter blur-[80px]">
-          <defs>
-            <linearGradient id="violetGradient" x1="100%" y1="100%" x2="0%" y2="0%">
-              <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.8" />
-              <stop offset="60%" stopColor="#6366f1" stopOpacity="0.5" />
-              <stop offset="100%" stopColor="#ec4899" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          <path
-            d="M 150,120 Q 350,80 430,220 T 300,420 Q 150,440 80,290 T 150,120 Z"
-            fill="url(#violetGradient)"
-          />
-        </svg>
-      </div>
-
-      {/* Center Heart-Glow Accent (Reacts with pulseActive) */}
+      {/* Resplandores difusos */}
       <div
-        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] rounded-full mix-blend-screen pointer-events-none transition-opacity duration-1000 ${
-          pulseActive ? 'opacity-80 animate-pulse-glow' : 'opacity-25 filter blur-[60px]'
+        className={`mesh-glow absolute -top-16 -right-16 w-80 h-80 rounded-full bg-gradient-to-br from-[#FF4D8D]/15 via-[#8B5CF6]/10 to-transparent blur-3xl transition-opacity duration-500 ${
+          pulseActive ? 'opacity-90 scale-110' : 'opacity-70'
         }`}
-        style={{
-          background: 'radial-gradient(circle, rgba(244,63,94,0.35) 0%, rgba(139,92,246,0.15) 50%, transparent 70%)',
-        }}
+      />
+      <div
+        className={`mesh-glow absolute top-1/3 -left-28 w-80 h-80 rounded-full bg-gradient-to-tr from-[#FF5C7A]/12 via-[#FF4D8D]/08 to-transparent blur-3xl transition-opacity duration-500 ${
+          pulseActive ? 'opacity-90 scale-110' : 'opacity-70'
+        }`}
       />
 
-      {/* Micro-noise texture overlay */}
-      <div
-        className="absolute inset-0 opacity-[0.025] mix-blend-overlay pointer-events-none"
-        style={{
-          backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.2) 1px, transparent 0)',
-          backgroundSize: '24px 24px',
-        }}
-      />
+      {/* Cintas fluidas vectoriales */}
+      <svg
+        className="absolute inset-0 w-full h-full"
+        viewBox="0 0 390 844"
+        preserveAspectRatio="xMidYMid slice"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <linearGradient id="threadGradA" x1="20" y1="90" x2="370" y2="460" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#FF5C7A" stopOpacity="0.85" />
+            <stop offset="55%" stopColor="#FF4D8D" stopOpacity="0.75" />
+            <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0.6" />
+          </linearGradient>
+
+          <linearGradient id="threadGradB" x1="380" y1="200" x2="10" y2="650" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.75" />
+            <stop offset="48%" stopColor="#FF4D8D" stopOpacity="0.65" />
+            <stop offset="100%" stopColor="#FF5C7A" stopOpacity="0.8" />
+          </linearGradient>
+
+          <filter id="ribbonSoftBlur" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation={pulseActive ? "20" : "16"} result="blur" />
+          </filter>
+        </defs>
+
+        {/* Capa superior de onda */}
+        <g className={`ambient-flow-top transition-opacity duration-500 ${pulseActive ? 'opacity-85' : 'opacity-60'}`}>
+          <path
+            d="M-40,110 C80,70 140,240 215,220 C290,200 340,90 430,140 C430,175 350,260 260,265 C170,270 120,160 -40,170 Z"
+            fill="url(#threadGradA)"
+            filter="url(#ribbonSoftBlur)"
+          />
+          <path
+            d="M-30,135 C90,95 150,230 220,225 C295,215 350,120 420,150"
+            fill="none"
+            stroke="url(#threadGradA)"
+            strokeOpacity="0.45"
+            strokeWidth="1.5"
+          />
+        </g>
+
+        {/* Capa inferior de onda */}
+        <g className={`ambient-flow-bottom transition-opacity duration-500 ${pulseActive ? 'opacity-80' : 'opacity-55'}`}>
+          <path
+            d="M-50,420 C60,400 130,580 200,530 C270,480 320,340 430,380 C440,430 330,570 230,580 C130,590 70,470 -50,490 Z"
+            fill="url(#threadGradB)"
+            filter="url(#ribbonSoftBlur)"
+          />
+          <path
+            d="M-40,450 C70,420 145,565 210,545 C280,510 325,385 420,410"
+            fill="none"
+            stroke="url(#threadGradB)"
+            strokeOpacity="0.4"
+            strokeWidth="1.75"
+          />
+        </g>
+
+        {/* Línea de conexión punteada */}
+        <path
+          d="M165,260 C185,340 205,370 225,490"
+          stroke="url(#threadGradA)"
+          strokeDasharray="3 4"
+          strokeOpacity={pulseActive ? "0.6" : "0.25"}
+          strokeWidth="0.75"
+        />
+      </svg>
     </div>
   )
-})
+}
