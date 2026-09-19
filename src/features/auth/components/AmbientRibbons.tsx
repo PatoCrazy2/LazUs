@@ -81,8 +81,9 @@ export const AmbientRibbons: React.FC<AmbientRibbonsProps> = ({ pulseActive = fa
           />
         </g>
 
-        {/* Línea de conexión punteada */}
+        {/* Línea de conexión punteada (oculta en mobile) */}
         <path
+          className="hidden md:inline"
           d="M165,260 C185,340 205,370 225,490"
           stroke="url(#threadGradA)"
           strokeDasharray="3 4"
