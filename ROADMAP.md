@@ -33,22 +33,34 @@
 
 ---
 
-### [ ] Hito 1: Autenticación Híbrida y Gestión de Sesión (`feature/auth`)
+### [🔄] Hito 1: Autenticación Híbrida y Gestión de Sesión (`feature/auth`)
 
-**Objetivo:** Permitir a los usuarios registrarse e iniciar sesión de forma segura sin coste de licencias, manteniendo su sesión activa de forma persistente.
+**Objetivo:** Permitir a los usuarios registrarse e iniciar sesión de forma segura sin coste de licencias, manteniendo su sesión activa de forma persistente y resiliente offline.
 
-#### Criterios de Aceptación:
-- [ ] **Registro e Inicio con Email/Password:**
-  - Contraseñas almacenadas con hash criptográfico seguro (Web Crypto API / scrypt en Workers).
-  - Validación de formato de email y longitud mínima de contraseña con Zod.
-- [ ] **Google OAuth:**
-  - Botón de "Continuar con Google" funcional mediante intercambio seguro de tokens en el Worker sin exponer credenciales cliente.
-- [ ] **Manejo de Sesión:**
-  - Token de sesión emitido en cookie `HttpOnly`, `Secure`, `SameSite=Lax`.
-  - Middleware en Hono (`authMiddleware`) que inyecta `c.get('user')` en rutas protegidas.
-- [ ] **Persistencia Local (PWA Offline):**
-  - Perfil básico sincronizado en la tabla `profile` de Dexie para evitar pantallas de carga o redirecciones al abrir la app.
-- [ ] **Tests Automatizados:** Tests con Vitest para registro, login correcto y rechazo de credenciales inválidas.
+#### ✅ Fase 1: Backend, Persistencia Offline y Tests (COMPLETADA)
+- [x] **Esquema PostgreSQL con Drizzle:** Tablas `users`, `sessions`, `login_attempts`, `auth_tokens` con índices, migraciones y tipos.
+- [x] **Criptografía Web Crypto Estándar:** PBKDF2 (100k iteraciones) con tolerancia a `password_hash = NULL`, PKCE (RFC 7636), firmas HMAC-SHA256 y hashing SHA-256 de tokens.
+- [x] **Invariante Crítica de Seguridad (Anti-Squatting Caso B):** Transferencia atómica de titularidad al vincular Google, anulación de `password_hash = NULL`, revocación de todas las sesiones y purga total de `auth_tokens` pendientes.
+- [x] **Anti-Prefetching de Escáneres:** Verificación mutante vía `POST /api/auth/verify-email` con cabecera `Referrer-Policy: no-referrer`.
+- [x] **Rate Limiting Dual Atómico en PostgreSQL:** Límite local (`ip:login:email`, 5 intentos / 15 min) y global anti-botnet (`email:login:<email>`, 20 intentos / 1h).
+- [x] **Recuperación y Reseteo con Orden Estricto:** Soporte de cuentas Google con `password_hash = NULL` y secuencia estricta: validar $\rightarrow$ hashear $\rightarrow$ consumir token $\rightarrow$ purgar sesiones previas $\rightarrow$ emitir nueva sesión.
+- [x] **Resiliencia de Correo con Resend:** Envíos no bloqueantes envueltos en `try/catch` con fallback a consola en desarrollo.
+- [x] **Mantenimiento Periódico:** Tarea `cleanupExpiredAuthData` expuesta para Cloudflare Cron Trigger (`0 3 * * *`).
+- [x] **Middleware de Sesión:** `authMiddleware` con sesiones hasheadas en BD y sliding expiration (+30 días si restan $<7$ días).
+- [x] **Persistencia Offline (Dexie):** Tabla local `profile` sincronizada vía `authStore` y hook reactivo `useAuth`.
+- [x] **Suite Exhaustiva de Pruebas Automatizadas:** 16 suites y 56 tests pasando (100% éxito) con Vitest en modo secuencial (`fileParallelism: false`).
+
+#### ⏳ Fase 2: Componentes UI Visuales e Integración (OBJETIVO ACTUAL)
+- [ ] **Integración de Componentes Diseñados en Stitch / Google AI Studio:**
+  - Adaptar y organizar el código exportado dentro de la arquitectura vertical `src/features/auth/components/`.
+  - Formularios modulares: `AuthCard`, `LoginForm`, `RegisterForm`, `GoogleAuthButton`, `ForgotPasswordModal`, `VerifyEmailPage`.
+- [ ] **Conexión Reactiva con Lógica de Dominio:**
+  - Conectar formularios a los contratos Zod (`RegisterInputSchema`, `LoginInputSchema`, etc.).
+  - Integración fluida con el hook `useAuth` (`login`, `register`, `logout`) y cliente `authApi`.
+- [ ] **Feedback Visual & Manejo de Errores:**
+  - Visualización amigable de errores de negocio, tiempos de espera por rate limiting (`Retry-After`) y estados de carga (`isLoggingIn`, `isRegistering`).
+- [ ] **Micro-interacciones y Diseño Móvil Háptico:**
+  - Transiciones suaves con Framer Motion, diseño mobile-first responsivo y estética íntima con TailwindCSS v4.
 
 ---
 
