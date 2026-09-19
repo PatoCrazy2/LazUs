@@ -24,7 +24,7 @@ export interface RouterContext {
 const rootRoute = createRootRouteWithContext<RouterContext>()({
   component: function RootComponent() {
     const context = rootRoute.useRouteContext()
-    if (context.auth?.isLoading) {
+    if (!context.auth?.hasResolvedInitialAuth) {
       return <AuthSplash />
     }
     return <Outlet />
@@ -37,7 +37,7 @@ const guestLayoutRoute = createRoute({
   id: 'guest',
   beforeLoad: ({ context }) => {
     // Invariant 1.1: Do not prematurely redirect during initial hydration
-    if (context.auth.isLoading) return
+    if (!context.auth.hasResolvedInitialAuth) return
     if (context.auth.isAuthenticated) {
       throw redirect({ to: '/' })
     }
@@ -101,7 +101,7 @@ export const authenticatedRoute = createRoute({
   path: '/',
   beforeLoad: ({ context }) => {
     // Invariant 1.1: Do not eject user while checking Dexie / session
-    if (context.auth.isLoading) return
+    if (!context.auth.hasResolvedInitialAuth) return
     if (!context.auth.isAuthenticated) {
       throw redirect({ to: '/login' })
     }

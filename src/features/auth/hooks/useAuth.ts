@@ -8,15 +8,11 @@ export const AUTH_QUERY_KEY = ['auth', 'me'] as const
 
 export function useAuth() {
   const queryClient = useQueryClient()
+  const [hasResolvedInitialAuth, setHasResolvedInitialAuth] = useState(false)
+  const [isDexieResolved, setIsDexieResolved] = useState(false)
 
   // Consulta de perfil en servidor con sincronización local en Dexie
-  const {
-    data,
-    isLoading: isServerLoading,
-    isError,
-    error,
-    refetch,
-  } = useQuery({
+  const meQuery = useQuery({
     queryKey: AUTH_QUERY_KEY,
     queryFn: async () => {
       try {
@@ -30,7 +26,7 @@ export function useAuth() {
           await authStore.clearProfile()
           throw err
         }
-        // Fallos de red o 5xx: intentar recuperar el perfil de Dexie para mantener al usuario autenticado offline
+        // Fallos de red, ECONNREFUSED o 5xx: recuperar perfil de Dexie para mantener sesión offline
         const localUser = await authStore.getProfile()
         if (localUser) {
           return {
@@ -49,26 +45,47 @@ export function useAuth() {
     staleTime: 5 * 60 * 1000, // 5 minutos de validez en memoria
   })
 
-  const [isLocalLoading, setIsLocalLoading] = useState(true)
+  const { data } = meQuery
 
-  // Sincronización proactiva instantánea desde Dexie al montar
+  // 1. Sincronización proactiva instantánea desde Dexie al arrancar
   useEffect(() => {
-    void authStore.getProfile().then((localUser) => {
-      if (localUser && !queryClient.getQueryData(AUTH_QUERY_KEY)) {
-        queryClient.setQueryData(AUTH_QUERY_KEY, {
-          id: localUser.id,
-          email: localUser.email,
-          displayName: localUser.displayName,
-          avatarUrl: localUser.avatarUrl || null,
-          emailVerified: localUser.emailVerified ?? false,
-          hasPassword: localUser.hasPassword ?? true,
-        })
-      }
-      setIsLocalLoading(false)
-    }).catch(() => {
-      setIsLocalLoading(false)
-    })
+    void authStore
+      .getProfile()
+      .then((localUser) => {
+        if (localUser && !queryClient.getQueryData(AUTH_QUERY_KEY)) {
+          queryClient.setQueryData(AUTH_QUERY_KEY, {
+            id: localUser.id,
+            email: localUser.email,
+            displayName: localUser.displayName,
+            avatarUrl: localUser.avatarUrl || null,
+            emailVerified: localUser.emailVerified ?? false,
+            hasPassword: localUser.hasPassword ?? true,
+          })
+        }
+        setIsDexieResolved(true)
+      })
+      .catch(() => {
+        setIsDexieResolved(true)
+      })
   }, [queryClient])
+
+  // 2. Resolución normal de arranque: cuando Dexie y meQuery (éxito o error) han respondido
+  useEffect(() => {
+    if (!hasResolvedInitialAuth && isDexieResolved && meQuery.isFetched) {
+      setHasResolvedInitialAuth(true)
+    }
+  }, [hasResolvedInitialAuth, isDexieResolved, meQuery.isFetched])
+
+  // 3. Timeout de seguridad anti-splash infinito (4s):
+  // Si la red se cuelga o no responde, forzamos hasResolvedInitialAuth para no atrapar al usuario.
+  // Limpia el timer cuando la resolución normal o el timeout concluyen.
+  useEffect(() => {
+    if (hasResolvedInitialAuth) return
+    const timer = setTimeout(() => {
+      setHasResolvedInitialAuth(true)
+    }, 4000)
+    return () => clearTimeout(timer)
+  }, [hasResolvedInitialAuth])
 
   // Mutación de Login
   const loginMutation = useMutation({
@@ -102,15 +119,15 @@ export function useAuth() {
     },
   })
 
-  const isLoading = (isServerLoading && !data) || isLocalLoading
-
   return {
     user: data || null,
-    isLoading,
+    hasResolvedInitialAuth,
+    isLoading: !hasResolvedInitialAuth,
     isAuthenticated: Boolean(data),
-    isError,
-    error,
-    refetch,
+    isSyncingInBackground: meQuery.isFetching,
+    isError: meQuery.isError,
+    error: meQuery.error,
+    refetch: meQuery.refetch,
     login: loginMutation.mutateAsync,
     register: registerMutation.mutateAsync,
     logout: logoutMutation.mutateAsync,
@@ -119,5 +136,7 @@ export function useAuth() {
     isLoggingOut: logoutMutation.isPending,
   }
 }
+
 export type AuthContextValue = ReturnType<typeof useAuth>
+
 

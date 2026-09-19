@@ -119,7 +119,7 @@ export function AppRouter() {
   // Invariant 1.1: Reactively re-evaluate route guards when auth resolves or flips
   useEffect(() => {
     void router.invalidate()
-  }, [auth.isAuthenticated, auth.isLoading])
+  }, [auth.isAuthenticated, auth.hasResolvedInitialAuth])
 
   return <RouterProvider router={router} context={{ auth }} />
 }
