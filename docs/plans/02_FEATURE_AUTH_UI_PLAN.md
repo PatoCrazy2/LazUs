@@ -1,20 +1,29 @@
 # Fase 2 - Hito 1: feature/auth — Plan Canónico Definitivo de Producción (React 19, TanStack Router & Offline-First)
 
-Plan maestro de implementación de la interfaz de autenticación para LazUs, adaptando el diseño de **Stitch / Google AI Studio** a **Vertical Slice Architecture** (`src/features/auth/components/`), integrando **TanStack Router con sincronización reactiva completa** (`router.invalidate()`), invariantes **offline-first** para apertura instantánea desde Dexie, protecciones de ruta declarativas con guardia ante `isLoading`, y gestión de verificación de correo adaptable según el estado de sesión.
+Plan maestro de implementación de la interfaz de autenticación para LazUs, adaptando el diseño de **Stitch / Google AI Studio** a **Vertical Slice Architecture** (`src/features/auth/components/`), integrando **TanStack Router con sincronización reactiva completa** (`router.invalidate()`), invariantes **offline-first** para apertura instantánea desde Dexie, protecciones de ruta declarativas desacopladas de estados transitorios con `hasResolvedInitialAuth` y timeout de seguridad, y gestión de verificación de correo adaptable según el estado de sesión.
 
 ---
 
 ## 1. Resoluciones Críticas de Estado Asíncrono, Guards y Offline-First
 
-### 1.1 🔴 Re-evaluación de `beforeLoad` con `router.invalidate()` y Guards Seguros ante `isLoading`
-Para neutralizar tanto el *falso redirect en el arranque* como el *bounce post-autenticación*:
+### 1.1 🔴 Desacoplamiento Reactivo (`hasResolvedInitialAuth`), Anti-Loop Invariant y Timeout de Seguridad
+Para neutralizar de raíz el *falso redirect en el arranque*, el *bucle de remontaje destructivo (590+ peticiones ante ECONNREFUSED/desconexión)* y el *bounce post-autenticación*:
 
-1. **Guards Condicionados a `isLoading` (`src/router.tsx`)**:
-   Los guards de ruta nunca toman decisiones destructivas mientras el estado de auth esté resolviendo:
+1. **La Causa Raíz de TanStack Query v5**:
+   En TanStack Query v5, `isLoading`/`isPending` permanece en `true` mientras `data` sea `undefined` (incluso tras recibir un error de red). Cualquier refetch en segundo plano o reintento de conexión vuelve a activar el estado de carga transitorio. Atar el montaje de `<Outlet />` o los guards de ruta a `isLoading` provoca que la pantalla de splash desmonte la vista del formulario, este pierda su estado, se vuelva a montar, dispare otro fetch y entre en un bucle infinito de 500+ peticiones.
+
+2. **Resolución Determinista con `hasResolvedInitialAuth` (`useAuth.ts`)**:
+   Se implementa una máquina de estados unidireccional:
+   - `hasResolvedInitialAuth`: inicia en `false` y pasa a `true` tan pronto como la lectura de Dexie y la primera respuesta de `/api/auth/me` (éxito o error) finalizan.
+   - **Invariante Inmutable:** Una vez que `hasResolvedInitialAuth` es `true`, **nunca vuelve a `false` durante toda la sesión de la app**, aun si `staleTime` expira o la query se refetchea en segundo plano.
+   - **Timeout de Seguridad Anti-Splash Infinito (4s):** Si la red o el backend experimentan latencia severa o caída total, un temporizador de 4 segundos fuerza `hasResolvedInitialAuth = true`, desbloqueando la aplicación en modo offline/invitado. Al resolver normalmente antes de los 4s, se invoca `clearTimeout` en el cleanup para evitar timers huérfanos en memoria.
+
+3. **Guards Condicionados a `hasResolvedInitialAuth` (`src/router.tsx`)**:
+   Los guards de ruta posponen cualquier decisión hasta que la resolución inicial esté completada:
    ```ts
    // En guestLayoutRoute (/login, /register, /forgot-password, /reset-password):
    beforeLoad: ({ context }) => {
-     if (context.auth.isLoading) return // No decidir prematuramente durante carga inicial
+     if (!context.auth.hasResolvedInitialAuth) return // Esperar resolución inicial determinista
      if (context.auth.isAuthenticated) {
        throw redirect({ to: '/' })
      }
@@ -22,36 +31,31 @@ Para neutralizar tanto el *falso redirect en el arranque* como el *bounce post-a
 
    // En authenticatedRoute (/ Dashboard):
    beforeLoad: ({ context }) => {
-     if (context.auth.isLoading) return // No expulsar al usuario mientras Dexie/me resuelven
+     if (!context.auth.hasResolvedInitialAuth) return // No expulsar al usuario durante el arranque
      if (!context.auth.isAuthenticated) {
        throw redirect({ to: '/login' })
      }
    }
    ```
 
-2. **Invalidación Explícita del Router ante Cambios de Auth (`AppRouter`)**:
-   En el componente contenedor que orquesta `<RouterProvider />`:
+4. **Invalidación Aislada del Router (`AppRouter`)**:
+   `router.invalidate()` se suscribe exclusivamente a cambios en la autenticación real:
    ```tsx
    export function AppRouter() {
      const auth = useAuth()
 
-     // Forzar la re-evaluación de los guards de la ruta actual cuando el estado de auth cambia
      useEffect(() => {
        router.invalidate()
-     }, [auth.isAuthenticated, auth.isLoading])
+     }, [auth.isAuthenticated, auth.hasResolvedInitialAuth])
 
      return <RouterProvider router={router} context={{ auth }} />
    }
    ```
-   Esto asegura que:
-   - Al resolverse la carga inicial, el router re-ejecuta `beforeLoad` y transiciona limpiamente a la pantalla definitiva.
-   - Al hacer login o registro, el cambio de `auth.isAuthenticated` dispara `router.invalidate()`, permitiendo el acceso al dashboard sin rebotes.
-   - Al hacer logout o expirar la cookie (401), el cambio de `auth.isAuthenticated` a `false` redirige de inmediato a `/login`.
+   Las fluctuaciones de `isFetching` o la expiración de `staleTime` no disparan la reevaluación destructiva de rutas.
 
-3. **Raíz con Pantalla Splash Anti-Flicker (`RootComponent`)**:
-   - En `createRootRouteWithContext<RouterContext>()`:
-     - Mientras `context.auth.isLoading === true`, se renderiza `<AuthSplash />` (cintas `AmbientRibbons`, branding LazUs y pulso orgánico sutil).
-     - Se garantiza **cero saltos visuales o parpadeos** entre pantallas durante la hidratación.
+5. **Raíz con Montaje Estable del Outlet (`RootComponent`)**:
+   - Mientras `!context.auth?.hasResolvedInitialAuth`, se renderiza `<AuthSplash />`.
+   - Una vez resuelto, el `<Outlet />` se monta permanentemente y nunca se desmonta por fluctuaciones de red o refetches.
 
 ---
 

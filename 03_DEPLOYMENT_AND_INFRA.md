@@ -71,33 +71,24 @@ A single repository is preferred for the initial project.
 Example:
 
 ```text
-couple-pwa/
+lazus/
 ├── src/
-│   ├── app/
-│   ├── components/
-│   ├── features/
-│   ├── routes/
-│   ├── lib/
-│   └── db/
+│   ├── features/       # Slices modulares de frontend (auth, couple, etc.)
+│   ├── db/             # Dexie.js e IndexedDB Outbox
+│   ├── router.tsx      # TanStack Router con guards y contexto
+│   ├── App.tsx         # Root Shell y TanStack Query Provider
+│   └── index.css       # Estilos globales y tokens
 │
 ├── server/
-│   ├── routes/
-│   ├── services/
-│   ├── repositories/
-│   ├── middleware/
-│   ├── realtime/
-│   ├── push/
-│   ├── media/
-│   └── index.ts
+│   ├── db/             # Drizzle ORM y schema autoritativo
+│   ├── features/       # Slices modulares de backend (auth, couple, etc.)
+│   └── index.ts        # Entrypoint Worker (Hono + Cloudflare bindings)
 │
-├── worker/
-│   └── index.ts
-│
-├── public/
-├── drizzle/
-├── tests/
-├── vite.config.ts
-├── wrangler.jsonc
+├── shared/             # Contratos Zod compartidos y DTOs
+├── drizzle/            # Migraciones SQL declarativas
+├── tests/              # Suite Vitest (unit, middleware, api)
+├── vite.config.ts      # Configuración Vite con @cloudflare/vite-plugin
+├── wrangler.jsonc      # Configuración de Cloudflare Workers & Assets
 ├── package.json
 └── README.md
 ```

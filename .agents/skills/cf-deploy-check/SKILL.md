@@ -64,18 +64,24 @@ Review `wrangler.jsonc` bindings against free-tier constraints:
 
 ---
 
-## 4. Local Worker Simulation
+## 4. Local Worker Simulation & Runtime Verification
 
-Before deploying to the cloud, test the integrated Worker and static assets locally using Wrangler:
+Test the unified environment locally using `@cloudflare/vite-plugin`:
 
 ```powershell
-npx wrangler dev
+pnpm run dev
 ```
 
 Verify:
-- PWA static assets load properly on `http://localhost:8787`.
-- `/api/health` returns `200 OK`.
+- PWA static assets and Hono API run together on `http://localhost:5173`.
+- `/api/health` returns `200 OK` reading `.dev.vars` inside `workerd`.
 - Deep links (e.g. `/tap/test-tag`) route to the PWA shell without returning a 404 from the Worker.
+
+Optionally, to simulate the compiled production build artifact before cloud deployment:
+```powershell
+pnpm run build
+npx wrangler dev
+```
 
 ---
 

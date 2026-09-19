@@ -48,19 +48,19 @@
 - [x] **Mantenimiento Periódico:** Tarea `cleanupExpiredAuthData` expuesta para Cloudflare Cron Trigger (`0 3 * * *`).
 - [x] **Middleware de Sesión:** `authMiddleware` con sesiones hasheadas en BD y sliding expiration (+30 días si restan $<7$ días).
 - [x] **Persistencia Offline (Dexie):** Tabla local `profile` sincronizada vía `authStore` y hook reactivo `useAuth`.
-- [x] **Suite Exhaustiva de Pruebas Automatizadas:** 16 suites y 56 tests pasando (100% éxito) con Vitest en modo secuencial (`fileParallelism: false`).
+- [x] **Suite Exhaustiva de Pruebas Automatizadas:** 17 suites y 64 tests pasando (100% éxito) con Vitest en modo secuencial (`fileParallelism: false`) incluyendo pruebas de aislamiento ante `staleTime` y timeout de seguridad.
 
-#### ⏳ Fase 2: Componentes UI Visuales e Integración (OBJETIVO ACTUAL)
-- [ ] **Integración de Componentes Diseñados en Stitch / Google AI Studio:**
-  - Adaptar y organizar el código exportado dentro de la arquitectura vertical `src/features/auth/components/`.
-  - Formularios modulares: `AuthCard`, `LoginForm`, `RegisterForm`, `GoogleAuthButton`, `ForgotPasswordModal`, `VerifyEmailPage`.
-- [ ] **Conexión Reactiva con Lógica de Dominio:**
-  - Conectar formularios a los contratos Zod (`RegisterInputSchema`, `LoginInputSchema`, etc.).
-  - Integración fluida con el hook `useAuth` (`login`, `register`, `logout`) y cliente `authApi`.
-- [ ] **Feedback Visual & Manejo de Errores:**
-  - Visualización amigable de errores de negocio, tiempos de espera por rate limiting (`Retry-After`) y estados de carga (`isLoggingIn`, `isRegistering`).
-- [ ] **Micro-interacciones y Diseño Móvil Háptico:**
-  - Transiciones suaves con Framer Motion, diseño mobile-first responsivo y estética íntima con TailwindCSS v4.
+#### ⏳ Fase 2: Componentes UI Visuales e Integración (EN PROGRESO)
+- [x] **Enrutamiento Tipado y Guards Desacoplados (TanStack Router):**
+  - Implementación de `src/router.tsx` con rutas públicas (`/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email`) y privadas protegidas (`/`).
+  - Guards desacoplados de `isLoading` gobernados determinísticamente por `hasResolvedInitialAuth` y timeout de seguridad de 4s.
+- [x] **Conexión Reactiva con Lógica de Dominio:**
+  - Conexión de formularios a contratos Zod (`RegisterInputSchema`, `LoginInputSchema`, etc.) y cliente tipado `authClient`.
+  - Integración con el hook `useAuth` (`login`, `register`, `logout`) y persistencia sincronizada en Dexie.
+- [x] **Feedback Visual & Manejo de Errores:**
+  - Visualización reactiva de errores de negocio, banner de email sin verificar (`UnverifiedEmailBanner`), pantalla dual de verificación (`VerifyEmailCard`) y temporizador de cuenta regresiva por rate limiting 429 (`Retry-After`).
+- [ ] **Restauración Visual 100% Fiel de Diseños Stitch / Google AI Studio (SIGUIENTE PASO):**
+  - Aplicar fielmente el diseño exportado en Stitch: fondo blanco puro (`#FFFFFF`), tipografía `#18181B`, ribbons SVG animados (`#FF5C7A`, `#8B5CF6`), botón specular de grafito con highlight de 1px e inputs translúcidos con borde `#EAEAEA`.
 
 ---
 
