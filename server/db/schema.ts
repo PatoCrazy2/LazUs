@@ -17,6 +17,12 @@ export const coupleStatusEnum = pgEnum('couple_status', ['pending', 'active', 'p
 export const activityStatusEnum = pgEnum('activity_status', ['pending', 'revealed'])
 export const memberRoleEnum = pgEnum('member_role', ['partner_a', 'partner_b'])
 export const tokenTypeEnum = pgEnum('auth_token_type', ['email_verification', 'password_reset'])
+export const invitationStatusEnum = pgEnum('invitation_status', [
+  'pending',
+  'accepted',
+  'revoked',
+  'expired',
+])
 
 // 1. Usuarios
 export const users = pgTable('users', {
@@ -61,14 +67,45 @@ export const coupleMembers = pgTable(
 )
 
 // 4. Tags NFC Físicos
-export const nfcTags = pgTable('nfc_tags', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  tagIdentifier: varchar('tag_identifier', { length: 128 }).unique().notNull(),
-  coupleId: uuid('couple_id').references(() => couples.id, { onDelete: 'cascade' }),
-  ownerUserId: uuid('owner_user_id').references(() => users.id, { onDelete: 'set null' }),
-  lastTappedAt: timestamp('last_tapped_at', { withTimezone: true }),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-})
+export const nfcTags = pgTable(
+  'nfc_tags',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    tagIdentifier: varchar('tag_identifier', { length: 128 }).unique().notNull(),
+    coupleId: uuid('couple_id').references(() => couples.id, { onDelete: 'cascade' }),
+    ownerUserId: uuid('owner_user_id').references(() => users.id, { onDelete: 'set null' }),
+    lastTappedAt: timestamp('last_tapped_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('idx_nfc_tags_owner').on(t.ownerUserId),
+    index('idx_nfc_tags_couple').on(t.coupleId),
+  ]
+)
+
+// 4b. Invitaciones Digitales de Respaldo
+export const coupleInvitations = pgTable(
+  'couple_invitations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    inviterUserId: uuid('inviter_user_id')
+      .references(() => users.id, { onDelete: 'cascade' })
+      .notNull(),
+    coupleId: uuid('couple_id')
+      .references(() => couples.id, { onDelete: 'cascade' }),
+    invitationCode: varchar('invitation_code', { length: 64 }).unique().notNull(),
+    status: invitationStatusEnum('status').default('pending').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    acceptedByUserId: uuid('accepted_by_user_id')
+      .references(() => users.id, { onDelete: 'set null' }),
+    acceptedAt: timestamp('accepted_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('idx_couple_invitations_code').on(t.invitationCode),
+    index('idx_couple_invitations_inviter').on(t.inviterUserId),
+  ]
+)
 
 // 5. Actividades Diarias
 export const dailyActivities = pgTable(
