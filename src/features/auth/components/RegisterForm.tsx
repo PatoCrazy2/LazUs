@@ -74,10 +74,10 @@ export function RegisterForm() {
       <section className="space-y-4">
         <div className="text-center pt-8 pb-3 space-y-1.5">
           <h1 className="text-[34px] leading-tight font-bold tracking-tight text-[#18181B]">
-            Crea tu espacio
+            Crea tu cuenta
           </h1>
           <p className="text-[15px] font-normal text-[#71717A] tracking-normal">
-            El comienzo de una historia compartida.
+            El espacio compartido para los dos comienza aquí.
           </p>
         </div>
       </section>
@@ -149,7 +149,7 @@ export function RegisterForm() {
                     }
                   }}
                   disabled={isRegistering || isRateLimited}
-                  placeholder="¿Cómo te llama tu pareja?"
+                  placeholder="Tu nombre"
                   className="w-full bg-transparent border-0 p-0 text-[14.5px] text-[#18181B] placeholder-[#A1A1AA] focus:ring-0 focus:outline-none disabled:opacity-50"
                 />
               </div>
@@ -179,7 +179,7 @@ export function RegisterForm() {
                     }
                   }}
                   disabled={isRegistering || isRateLimited}
-                  placeholder="tu@lazus.app"
+                  placeholder="tu@correo.com"
                   className="w-full bg-transparent border-0 p-0 text-[14.5px] text-[#18181B] placeholder-[#A1A1AA] focus:ring-0 focus:outline-none disabled:opacity-50"
                 />
               </div>
@@ -209,7 +209,7 @@ export function RegisterForm() {
                     }
                   }}
                   disabled={isRegistering || isRateLimited}
-                  placeholder="Crea una contraseña segura"
+                  placeholder="Crea una contraseña"
                   className="w-full bg-transparent border-0 p-0 text-[14.5px] text-[#18181B] placeholder-[#A1A1AA] focus:ring-0 focus:outline-none disabled:opacity-50"
                 />
                 {/* Control interactivo con contraste WCAG 1.4.11 (>= 3:1) */}
@@ -275,13 +275,13 @@ export function RegisterForm() {
                 {isRegistering ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin text-white" />
-                    <span>Creando tu espacio...</span>
+                    <span>Creando tu cuenta...</span>
                   </>
                 ) : isRateLimited ? (
                   <span>Espera {formattedTime}</span>
                 ) : (
                   <>
-                    <span>Vincular pareja</span>
+                    <span>Crear cuenta</span>
                     <ArrowRight className="w-4 h-4 text-white/90" strokeWidth={2} />
                   </>
                 )}
@@ -294,7 +294,7 @@ export function RegisterForm() {
       {/* Switch to Login */}
       <footer className="pt-2 pb-1 space-y-1.5 text-center">
         <p className="text-[13px] text-[#71717A]">
-          ¿Ya tienen una cuenta?
+          ¿Ya tienes una cuenta?
           <Link
             to="/login"
             className="font-medium text-[#18181B] hover:underline underline-offset-2 ml-1"

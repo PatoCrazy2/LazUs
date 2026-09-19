@@ -232,7 +232,7 @@ export function VerifyEmailCard() {
                         required
                         value={resendEmail}
                         onChange={(e) => setResendEmail(e.target.value)}
-                        placeholder="tu@lazus.app"
+                        placeholder="tu@correo.com"
                         className="w-full bg-transparent border-0 p-0 text-[14.5px] text-[#18181B] placeholder-[#A1A1AA] focus:ring-0 focus:outline-none"
                       />
                     </div>

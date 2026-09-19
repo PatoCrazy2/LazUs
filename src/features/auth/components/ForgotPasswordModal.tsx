@@ -136,7 +136,7 @@ export function ForgotPasswordModal() {
                       if (fieldError) setFieldError(null)
                     }}
                     disabled={isSubmitting || isRateLimited}
-                    placeholder="tu@lazus.app"
+                    placeholder="tu@correo.com"
                     className="w-full bg-transparent border-0 p-0 text-[14.5px] text-[#18181B] placeholder-[#A1A1AA] focus:ring-0 focus:outline-none disabled:opacity-50"
                   />
                 </div>

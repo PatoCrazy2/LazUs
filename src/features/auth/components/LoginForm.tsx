@@ -130,7 +130,7 @@ export function LoginForm() {
                     if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }))
                   }}
                   disabled={isLoggingIn || isRateLimited}
-                  placeholder="tu@lazus.app"
+                  placeholder="tu@correo.com"
                   className="w-full bg-transparent border-0 p-0 text-[14.5px] text-[#18181B] placeholder-[#A1A1AA] focus:ring-0 focus:outline-none disabled:opacity-50"
                 />
               </div>
@@ -158,7 +158,7 @@ export function LoginForm() {
                     if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }))
                   }}
                   disabled={isLoggingIn || isRateLimited}
-                  placeholder="Llave privada de acceso"
+                  placeholder="Tu contraseña"
                   className="w-full bg-transparent border-0 p-0 text-[14.5px] text-[#18181B] placeholder-[#A1A1AA] focus:ring-0 focus:outline-none disabled:opacity-50"
                 />
                 {/* Control interactivo con contraste WCAG 1.4.11 (>= 3:1) */}
@@ -223,7 +223,7 @@ export function LoginForm() {
             to="/register"
             className="font-medium text-[#18181B] hover:underline underline-offset-2 ml-1"
           >
-            Vincular pareja
+            Crear cuenta
           </Link>
         </p>
         <p className="text-[11px] text-[#A1A1AA]">
