@@ -5,7 +5,7 @@
 ```text
 Frontend
 ├── React + TypeScript
-├── Vite
+├── Vite (@cloudflare/vite-plugin)
 ├── TanStack Router
 ├── TanStack Query
 ├── Dexie (IndexedDB)
@@ -300,22 +300,20 @@ POST /api/push/subscribe
 
 Hono should contain application/domain logic at the API boundary, while actual data access lives in service/repository modules.
 
-Do not build a giant single Hono file.
-
-Suggested backend separation:
+Mandatory backend architecture (Vertical Slice Architecture, GEMINI.md Rule 8):
 
 ```text
 server/
-├── routes/
-├── middleware/
-├── services/
-├── repositories/
-├── schemas/
-├── auth/
-├── realtime/
-├── push/
-├── media/
-└── lib/
+├── index.ts                # API Entrypoint con Hono, Hyperdrive y bindings
+├── db/                     # Conexión Drizzle y schema.ts autoritativo
+└── features/               # Slices modulares de dominio
+    ├── auth/               # crypto, email, repository, service, middleware, routes
+    ├── couple/             # vinculación de pareja y verificación de membresía
+    ├── activities/         # submission y reglas de Blind Reveal
+    ├── affection/          # eventos de afecto y toques NFC
+    ├── realtime/           # Durable Objects y WebSocket hibernation
+    ├── media/              # URLs prefirmadas directas a R2
+    └── notifications/      # suscripción y despacho Web Push
 ```
 
 ---

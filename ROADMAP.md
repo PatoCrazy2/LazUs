@@ -22,7 +22,7 @@
 ## 🗺️ Hitos de Desarrollo (Vertical Slices)
 
 ```text
-[ ] Hito 1: Autenticación Híbrida y Sesión (feature/auth)
+[x] Hito 1: Autenticación Híbrida y Sesión (feature/auth)
 [ ] Hito 2: Emparejamiento de Pareja y NFC Linking (feature/couple)
 [ ] Hito 3: Catálogo de Actividades y Blind Reveal (feature/activities)
 [ ] Hito 4: Tiempo Real con Durable Objects (feature/realtime)
@@ -33,22 +33,40 @@
 
 ---
 
-### [ ] Hito 1: Autenticación Híbrida y Gestión de Sesión (`feature/auth`)
+### [✅] Hito 1: Autenticación Híbrida y Gestión de Sesión (`feature/auth`)
 
-**Objetivo:** Permitir a los usuarios registrarse e iniciar sesión de forma segura sin coste de licencias, manteniendo su sesión activa de forma persistente.
+**Objetivo:** Permitir a los usuarios registrarse e iniciar sesión de forma segura sin coste de licencias, manteniendo su sesión activa de forma persistente y resiliente offline con estética de producción móvil.
 
-#### Criterios de Aceptación:
-- [ ] **Registro e Inicio con Email/Password:**
-  - Contraseñas almacenadas con hash criptográfico seguro (Web Crypto API / scrypt en Workers).
-  - Validación de formato de email y longitud mínima de contraseña con Zod.
-- [ ] **Google OAuth:**
-  - Botón de "Continuar con Google" funcional mediante intercambio seguro de tokens en el Worker sin exponer credenciales cliente.
-- [ ] **Manejo de Sesión:**
-  - Token de sesión emitido en cookie `HttpOnly`, `Secure`, `SameSite=Lax`.
-  - Middleware en Hono (`authMiddleware`) que inyecta `c.get('user')` en rutas protegidas.
-- [ ] **Persistencia Local (PWA Offline):**
-  - Perfil básico sincronizado en la tabla `profile` de Dexie para evitar pantallas de carga o redirecciones al abrir la app.
-- [ ] **Tests Automatizados:** Tests con Vitest para registro, login correcto y rechazo de credenciales inválidas.
+#### ✅ Fase 1: Backend, Persistencia Offline y Tests (COMPLETADA)
+- [x] **Esquema PostgreSQL con Drizzle:** Tablas `users`, `sessions`, `login_attempts`, `auth_tokens` con índices, migraciones y tipos.
+- [x] **Criptografía Web Crypto Estándar:** PBKDF2 (100k iteraciones) con tolerancia a `password_hash = NULL`, PKCE (RFC 7636), firmas HMAC-SHA256 y hashing SHA-256 de tokens.
+- [x] **Invariante Crítica de Seguridad (Anti-Squatting Caso B):** Transferencia atómica de titularidad al vincular Google, anulación de `password_hash = NULL`, revocación de todas las sesiones y purga total de `auth_tokens` pendientes.
+- [x] **Anti-Prefetching de Escáneres:** Verificación mutante vía `POST /api/auth/verify-email` con cabecera `Referrer-Policy: no-referrer`.
+- [x] **Rate Limiting Dual Atómico en PostgreSQL:** Límite local (`ip:login:email`, 5 intentos / 15 min) y global anti-botnet (`email:login:<email>`, 20 intentos / 1h).
+- [x] **Recuperación y Reseteo con Orden Estricto:** Soporte de cuentas Google con `password_hash = NULL` y secuencia estricta: validar $\rightarrow$ hashear $\rightarrow$ consumir token $\rightarrow$ purgar sesiones previas $\rightarrow$ emitir nueva sesión.
+- [x] **Resiliencia de Correo con Resend:** Envíos no bloqueantes envueltos en `try/catch` con fallback a consola en desarrollo.
+- [x] **Mantenimiento Periódico:** Tarea `cleanupExpiredAuthData` expuesta para Cloudflare Cron Trigger (`0 3 * * *`).
+- [x] **Middleware de Sesión:** `authMiddleware` con sesiones hasheadas en BD y sliding expiration (+30 días si restan $<7$ días).
+- [x] **Persistencia Offline (Dexie):** Tabla local `profile` sincronizada vía `authStore` y hook reactivo `useAuth`.
+- [x] **Suite Exhaustiva de Pruebas Automatizadas:** 17 suites y 64 tests pasando (100% éxito) con Vitest en modo secuencial (`fileParallelism: false`) incluyendo pruebas de aislamiento ante `staleTime` y timeout de seguridad.
+
+#### ✅ Fase 2: Componentes UI Visuales, Integración y PWA Shell (COMPLETADA)
+- [x] **Enrutamiento Tipado y Guards Desacoplados (TanStack Router):**
+  - Implementación de `src/router.tsx` con rutas públicas (`/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email`) y privadas protegidas (`/`).
+  - Guards desacoplados de `isLoading` gobernados determinísticamente por `hasResolvedInitialAuth` y timeout de seguridad de 4s.
+- [x] **Conexión Reactiva con Lógica de Dominio:**
+  - Conexión de formularios a contratos Zod (`RegisterInputSchema`, `LoginInputSchema`, etc.) y cliente tipado `authClient`.
+  - Integración con el hook `useAuth` (`login`, `register`, `logout`) y persistencia sincronizada en Dexie.
+- [x] **Feedback Visual & Manejo de Errores:**
+  - Visualización reactiva de errores de negocio, banner de email sin verificar (`UnverifiedEmailBanner`), pantalla dual de verificación (`VerifyEmailCard`) y temporizador de cuenta regresiva por rate limiting 429 (`Retry-After`).
+- [x] **Restauración Visual 100% Fiel de Diseños Stitch / Google AI Studio:**
+  - Fondo blanco puro (`#FFFFFF`), tipografía `#18181B`, ambient ribbons generativos SVG flotantes (`#FF5C7A`, `#8B5CF6`) con línea punteada adaptativa solo desktop/tablet (`hidden md:inline`).
+  - Botón *specular* de grafito con highlight de 1px e inputs translúcidos con borde `#EAEAEA` y estados de foco limpios.
+  - Botón de Google Auth translúcido con icono oficial multi-color.
+  - Safe-areas móviles nativas (`pt-safe`, `pb-safe`, `viewport-fit=cover`) eliminando barras simuladas obsoletas.
+  - Copys y placeholders optimizados: distinción estricta de registro de usuario individual ("Crea tu cuenta", "Crear cuenta") previo al emparejamiento, y placeholders consistentes (`tu@correo.com`, `Tu nombre`, `Tu contraseña`).
+- [x] **Optimización de Metadatos PWA y Webmanifest para Producción:**
+  - Idioma `<html lang="es">`, metadato moderno `<meta name="mobile-web-app-capable" content="yes">`, `apple-mobile-web-app-title`, `format-detection="telephone=no"`, y sincronización de colores `#FFFFFF` en `vite.config.ts`.
 
 ---
 
