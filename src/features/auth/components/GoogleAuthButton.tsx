@@ -4,6 +4,7 @@ interface GoogleAuthButtonProps {
   label?: string
   disabled?: boolean
   className?: string
+  redirect?: string
 }
 
 /**
@@ -15,6 +16,7 @@ export const GoogleAuthButton = memo(function GoogleAuthButton({
   label = 'Continuar con Google',
   disabled = false,
   className = '',
+  redirect,
 }: GoogleAuthButtonProps) {
   const [isRedirecting, setIsRedirecting] = useState(false)
 
@@ -22,7 +24,8 @@ export const GoogleAuthButton = memo(function GoogleAuthButton({
     if (disabled || isRedirecting) return
     setIsRedirecting(true)
     // Direct native browser redirection: lets Edge Worker handle OAuth 302 directly
-    window.location.href = '/api/auth/google'
+    const targetUrl = redirect ? `/api/auth/google?redirect=${encodeURIComponent(redirect)}` : '/api/auth/google'
+    window.location.href = targetUrl
   }
 
   return (

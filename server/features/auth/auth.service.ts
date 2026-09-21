@@ -404,7 +404,7 @@ export class AuthService {
   }
 
   // --- Google OAuth 2.0 PKCE & State ---
-  async getGoogleAuthUrl(env: AuthServiceEnv, redirectUri: string) {
+  async getGoogleAuthUrl(env: AuthServiceEnv, redirectUri: string, returnTo?: string) {
     if (!env.GOOGLE_CLIENT_ID || !env.AUTH_SECRET) {
       const err = new Error('Google OAuth o AUTH_SECRET no configurado') as Error & { status?: number }
       err.status = 500
@@ -416,6 +416,7 @@ export class AuthService {
       codeVerifier,
       nonce: generateRandomToken(16),
       timestamp: Date.now(),
+      returnTo: returnTo || undefined,
     }
 
     const signedState = await signOAuthState(statePayload, env.AUTH_SECRET)
@@ -453,6 +454,7 @@ export class AuthService {
       codeVerifier: string
       nonce: string
       timestamp: number
+      returnTo?: string
     }>(state, env.AUTH_SECRET)
 
     if (!stateData) {
@@ -540,6 +542,7 @@ export class AuthService {
       sessionToken: rawSessionToken,
       sessionExpiresAt,
       wasSquatted,
+      returnTo: stateData.returnTo,
     }
   }
 

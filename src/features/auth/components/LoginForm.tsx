@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { ArrowRight, Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react'
 import React, { useState } from 'react'
 import { LoginInputSchema } from '../../../../shared'
@@ -9,6 +9,10 @@ import { GoogleAuthButton } from './GoogleAuthButton'
 
 export function LoginForm() {
   const { login, isLoggingIn } = useAuth()
+  const navigate = useNavigate()
+  const search = useSearch({ strict: false }) as { redirect?: string }
+  const redirectTarget = search.redirect
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -36,7 +40,11 @@ export function LoginForm() {
 
     try {
       await login(validation.data)
-      // On success, AppRouter responds to auth state changes via router.invalidate() and navigates to '/'
+      if (redirectTarget && redirectTarget.startsWith('/')) {
+        window.location.href = redirectTarget
+      } else {
+        void navigate({ to: '/' })
+      }
     } catch (err: unknown) {
       if (err instanceof AuthApiError) {
         if (err.status === 429 && err.retryAfter) {
@@ -71,7 +79,7 @@ export function LoginForm() {
       <section className="space-y-4 my-auto pt-1 pb-1">
         <div className="space-y-4 pt-1">
           {/* Botón de Google */}
-          <GoogleAuthButton disabled={isLoggingIn || isRateLimited} />
+          <GoogleAuthButton redirect={redirectTarget} disabled={isLoggingIn || isRateLimited} />
 
           {/* Separador "o" */}
           <div className="relative py-0.5 flex items-center justify-center">
@@ -221,6 +229,7 @@ export function LoginForm() {
           ¿Aún no tienen su espacio?
           <Link
             to="/register"
+            search={redirectTarget ? { redirect: redirectTarget } : undefined}
             className="font-medium text-[#18181B] hover:underline underline-offset-2 ml-1"
           >
             Crear cuenta

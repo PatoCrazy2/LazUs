@@ -1,4 +1,4 @@
-import { Link, useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { ArrowRight, Check, Eye, EyeOff, Loader2, Lock, Mail, User, X } from 'lucide-react'
 import React, { useState } from 'react'
 import { RegisterInputSchema } from '../../../../shared'
@@ -10,6 +10,8 @@ import { GoogleAuthButton } from './GoogleAuthButton'
 export function RegisterForm() {
   const { register, isRegistering } = useAuth()
   const navigate = useNavigate()
+  const search = useSearch({ strict: false }) as { redirect?: string }
+  const redirectTarget = search.redirect
 
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
@@ -50,8 +52,12 @@ export function RegisterForm() {
 
     try {
       await register(validation.data)
-      // Navigate to authenticated root with unverified email banner
-      void navigate({ to: '/' })
+      // Navigate to intended redirect destination or home
+      if (redirectTarget && redirectTarget.startsWith('/')) {
+        window.location.href = redirectTarget
+      } else {
+        void navigate({ to: '/' })
+      }
     } catch (err: unknown) {
       if (err instanceof AuthApiError) {
         if (err.status === 429 && err.retryAfter) {
@@ -63,7 +69,7 @@ export function RegisterForm() {
         }
         setServerError(err.message)
       } else {
-        setServerError('No se pudo conectar con el servidor. Verifica tu conexión.')
+        setServerError('No pudimos conectar con el servidor. Revisa tu conexión.')
       }
     }
   }
@@ -88,6 +94,7 @@ export function RegisterForm() {
           {/* Botón de Google */}
           <GoogleAuthButton
             label="Registrarse con Google"
+            redirect={redirectTarget}
             disabled={isRegistering || isRateLimited}
           />
 
@@ -297,6 +304,7 @@ export function RegisterForm() {
           ¿Ya tienes una cuenta?
           <Link
             to="/login"
+            search={redirectTarget ? { redirect: redirectTarget } : undefined}
             className="font-medium text-[#18181B] hover:underline underline-offset-2 ml-1"
           >
             Iniciar sesión
