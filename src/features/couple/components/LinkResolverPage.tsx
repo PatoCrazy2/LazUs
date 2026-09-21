@@ -1,9 +1,10 @@
 import { useNavigate, useParams } from '@tanstack/react-router'
-import { AlertCircle, ArrowLeft, HeartHandshake, Radio } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Radio } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../auth/hooks/useAuth'
 import { useCouple, useResolveIdentifier } from '../hooks/useCouple'
 import { AutoClaimSuccess } from './AutoClaimSuccess'
+import { PairingRitualScreen } from './PairingRitualScreen'
 
 /**
  * LinkResolverPage: Maneja de forma inteligente y reactiva los 5 estados de resolución:
@@ -110,39 +111,16 @@ export function LinkResolverPage() {
     )
   }
 
-  // CASO 2: 'ready_to_pair' -> Redirigir o mostrar pantalla del Ritual de Unión
+  // CASO 2: 'ready_to_pair' -> Mostrar pantalla completa del Ritual de Unión
   if (tagData?.state === 'ready_to_pair') {
-    // Al detectarlo listo para vincular, navegamos a la pantalla del ritual
-    // (o renderizamos el ritual directamente pasándole el partner y el identifier)
     return (
-      <div className="w-full max-w-[390px] mx-auto min-h-[60vh] flex flex-col items-center justify-center text-center p-6 space-y-6">
-        <div className="w-16 h-16 rounded-full bg-pink-50 border border-pink-100 flex items-center justify-center text-[#FF5C7A] shadow-sm">
-          <HeartHandshake className="w-8 h-8" />
-        </div>
-        <div className="space-y-2">
-          <span className="text-[11px] font-semibold tracking-wider text-[#FF5C7A] uppercase bg-pink-50/80 px-2.5 py-1 rounded-full">
-            Invitación detectada
-          </span>
-          <h2 className="text-2xl font-bold text-[#18181B] tracking-tight">
-            ¿Vincularte con {tagData.owner?.display_name || 'tu pareja'}?
-          </h2>
-          <p className="text-sm text-[#71717A] max-w-[290px] mx-auto leading-relaxed">
-            Has escaneado la pulsera de tu pareja. Toca el botón para completar el ritual de unión.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            // Navegar al Ritual de Unión (Bloque 4) pasando el identificador
-            void navigate({
-              to: '/', // Provisional hasta montar el ritual o ejecutar directamente
-            })
-          }}
-          className="specular-button w-full h-12 rounded-[15px] text-white text-[14.5px] font-medium tracking-tight flex items-center justify-center gap-2 active:scale-[0.985] transition-transform cursor-pointer"
-        >
-          <span>Continuar al Ritual de Unión</span>
-        </button>
-      </div>
+      <PairingRitualScreen
+        identifier={tagData.identifier}
+        partnerName={tagData.owner?.display_name || 'tu pareja'}
+        partnerAvatarUrl={tagData.owner?.avatar_url}
+        onSuccess={() => void navigate({ to: '/' })}
+        onCancel={() => void navigate({ to: '/' })}
+      />
     )
   }
 
