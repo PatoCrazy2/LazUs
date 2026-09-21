@@ -1,10 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from '@tanstack/react-router'
 import { motion } from 'framer-motion'
-import { Heart, LogOut, Sparkles, User, Wifi } from 'lucide-react'
+import { Heart, KeyRound, LogOut, Sparkles, User, Users, Wifi } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { AmbientRibbons, UnverifiedEmailBanner } from './features/auth/components'
 import { useAuth } from './features/auth/hooks/useAuth'
+import { PairingSettingsModal } from './features/couple/components'
+import { useCouple } from './features/couple/hooks/useCouple'
 import { authenticatedRoute, router } from './router'
 
 const queryClient = new QueryClient({
@@ -22,7 +24,9 @@ const queryClient = new QueryClient({
  */
 export function DashboardPage() {
   const { user, logout, isLoggingOut } = useAuth()
+  const { partner } = useCouple()
   const [hearts, setHearts] = useState(0)
+  const [isPairingModalOpen, setIsPairingModalOpen] = useState(false)
 
   return (
     <div className="relative min-h-[100dvh] w-full flex flex-col justify-between overflow-x-hidden bg-[#080c14] text-white pt-safe pb-safe">
@@ -43,6 +47,16 @@ export function DashboardPage() {
 
           <button
             type="button"
+            onClick={() => setIsPairingModalOpen(true)}
+            aria-label="Vincular pareja o ver código"
+            className="p-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-slate-400 hover:text-pink-400 transition-colors cursor-pointer border border-white/5 flex items-center gap-1 text-xs"
+            title="Vincular Pareja"
+          >
+            <KeyRound className="w-4 h-4" />
+          </button>
+
+          <button
+            type="button"
             onClick={() => void logout()}
             disabled={isLoggingOut}
             aria-label="Cerrar sesión"
@@ -54,12 +68,30 @@ export function DashboardPage() {
       </header>
 
       <main className="relative z-10 flex flex-col items-center gap-6 my-auto px-6 py-8 text-center max-w-md mx-auto w-full">
-        {/* User Greeting */}
-        <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-slate-300">
-          <User className="w-3.5 h-3.5 text-rose-400" />
-          <span>
-            Hola, <strong className="text-white font-medium">{user?.displayName || 'Amor'}</strong>
-          </span>
+        {/* User Greeting & Couple Status */}
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-slate-300">
+            <User className="w-3.5 h-3.5 text-rose-400" />
+            <span>
+              Hola, <strong className="text-white font-medium">{user?.displayName || 'Amor'}</strong>
+            </span>
+          </div>
+
+          {partner ? (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-pink-500/10 border border-pink-500/20 text-xs text-pink-300">
+              <Users className="w-3.5 h-3.5 text-pink-400" />
+              <span>Unido con <strong className="text-white">{partner.display_name}</strong></span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsPairingModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 hover:bg-amber-500/20 transition-colors cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Sin vincular • Toca aquí</span>
+            </button>
+          )}
         </div>
 
         {/* Center Pulsing Heart */}
@@ -75,10 +107,12 @@ export function DashboardPage() {
 
         <div className="space-y-2">
           <h1 className="text-2xl font-bold tracking-tight text-white">
-            Espacio Íntimo para Parejas
+            {partner ? `Espacio de ${user?.displayName || 'Tú'} & ${partner.display_name}` : 'Espacio Íntimo para Parejas'}
           </h1>
           <p className="text-sm text-slate-400 max-w-xs">
-            Arquitectura offline-first con Dexie, toques afectivos en tiempo real y revelación a ciegas.
+            {partner
+              ? 'Su espacio compartido está activo. Toquen sus pulseras o completen la actividad diaria juntos.'
+              : 'Acerca tu móvil a la pulsera de tu pareja o genera un código para comenzar el ritual.'}
           </p>
         </div>
 
@@ -92,6 +126,12 @@ export function DashboardPage() {
           Toques de afecto: <span className="font-bold">{hearts}</span>
         </button>
       </main>
+
+      {/* Pairing Settings Modal (Generar / Canjear Código LZ-XXXX) */}
+      <PairingSettingsModal
+        isOpen={isPairingModalOpen}
+        onClose={() => setIsPairingModalOpen(false)}
+      />
 
       <footer className="w-full text-xs text-slate-500 py-3 border-t border-white/5 text-center relative z-10">
         React 19 • TanStack Router • Dexie • Cloudflare

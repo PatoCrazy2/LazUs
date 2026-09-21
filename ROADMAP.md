@@ -23,7 +23,7 @@
 
 ```text
 [x] Hito 1: Autenticación Híbrida y Sesión (feature/auth)
-[🔄] Hito 2: Emparejamiento de Pareja y NFC Linking (feature/couple) — Backend Completado
+[x] Hito 2: Emparejamiento de Pareja y NFC Linking (feature/couple)
 [ ] Hito 3: Catálogo de Actividades y Blind Reveal (feature/activities)
 [ ] Hito 4: Tiempo Real con Durable Objects (feature/realtime)
 [ ] Hito 5: Rutas NFC y Toque de Afecto Háptico (feature/nfc)
@@ -70,7 +70,7 @@
 
 ---
 
-### [🔄] Hito 2: Emparejamiento de Pareja y Vinculación NFC (`feature/couple`)
+### [✅] Hito 2: Emparejamiento de Pareja y Vinculación NFC (`feature/couple`)
 
 **Objetivo:** Conectar a los dos miembros de la relación en una entidad única `couple_id` mediante su pulsera física o un enlace de invitación con UX de 1 confirmación y auto-asignación sin botones.
 
@@ -84,12 +84,13 @@
 - [x] **Rutas Edge Hono (`/api/couple`):** Endpoints `/resolve/:identifier`, `/claim-tag`, `/pair`, `/current` y `/invite-code` montados y validados.
 - [x] **Suite Exhaustiva de Tests de Integración:** 12 casos de prueba cubriendo auto-discovery, auto-claim, vinculación atómica, 409 Conflict, idempotencia, códigos digitales y purga en `tests/api/couple.pairing.test.ts`.
 
-#### ⏳ Fase 2: Frontend PWA, Store Dexie, Rutas TanStack y UI de Vinculación (PENDIENTE)
-- [ ] **Persistencia Local y Sincronización en Dexie:** Tablas locales para estado de pareja y pulseras asociadas.
-- [ ] **Rutas y Deep Linking con TanStack Router:** Manejo de rutas `/link/:identifier` y visualización adaptativa.
-- [ ] **Flujo de Auto-claim Silencioso:** Asignación automática de pulseras vírgenes en segundo plano sin botones confusos.
-- [ ] **El Ritual de Unión (UI):** Pantalla de confirmación instantánea con 1 toque ("¿Vincularte con [Nombre]?").
-- [ ] **Respaldo Digital (UI):** Generación y compartición de códigos `LZ-XXXX` para contingencia o parejas a distancia.
+#### ✅ Fase 2: Frontend PWA, Store Dexie, Rutas TanStack y UI de Vinculación (COMPLETADA)
+- [x] **Cliente API y Hooks TanStack Query (`couple.api.ts`, `useCouple.ts`):** Integración completa con `/api/couple/*`, mutaciones e invalidación atómica de `['auth', 'me']` y `['couple', 'current']`.
+- [x] **Persistencia Local y Sincronización en Dexie (`couple.store.ts`):** Almacén `db.couple` para disponibilidad inmediata offline de la pareja y actualización de `db.profile`.
+- [x] **Rutas y Deep Linking con TanStack Router (`router.tsx`):** Ruta dual `/link/$identifier` y preservación del search param `?redirect=` en Login, Register y Google OAuth (firmado en HMAC state).
+- [x] **Flujo de Auto-claim Silencioso (`AutoClaimSuccess.tsx`):** Asignación automática de pulseras vírgenes en segundo plano sin botones y animación de celebración con Framer Motion.
+- [x] **El Ritual de Unión (`PairingRitualScreen.tsx`):** Pantalla inmersiva a pantalla completa, validación estricta de conexión online (`navigator.onLine`), captura amigable de error 409 Conflict y celebración visual previa al dashboard.
+- [x] **Respaldo Digital (`PairingSettingsModal.tsx`):** Generación de códigos `LZ-XXXX` de 24h, copia rápida al portapapeles y canje directo con validación de formato.
 
 ---
 
