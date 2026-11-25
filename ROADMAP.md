@@ -141,21 +141,22 @@
 
 ---
 
-### [ ] Hito 5: Rutas NFC y Toque de Afecto Háptico (`feature/nfc`)
+### [✅] Hito 5: Rutas NFC y Toque de Afecto Háptico (`feature/nfc`)
 
 **Objetivo:** Dar vida a la pulsera física NFC resolviendo deep links con retroalimentación física.
 
-#### Criterios de Aceptación:
-- [ ] **Resolución Inmediata de Rutas `/tap/:tagId`:**
-  - Al aproximar el teléfono a la pulsera, el sistema operativo abre el enlace.
+#### ✅ Criterios de Aceptación (COMPLETADA):
+- [x] **Resolución Inmediata de Rutas `/tap/:tagId`:**
+  - Al aproximar el teléfono a la pulsera, el sistema operativo abre el enlace (cero dependencia de Web NFC API).
   - La app lee el estado local de Dexie en menos de 50 ms y decide:
+    - *Opción A (Sin pareja activa):* Redirige automáticamente a `/link/:tagId` para auto-claim o vinculación.
     - *Caso 1:* Si el usuario no ha respondido hoy $\rightarrow$ navega a la actividad diaria.
-    - *Caso 2:* Si ya respondió y la pareja no $\rightarrow$ envía un toque de afecto en segundo plano.
-    - *Caso 3:* Si ambos respondieron $\rightarrow$ abre la pantalla de resultados revelados.
-- [ ] **Toque de Afecto Instantáneo:**
-  - Animación de corazón flotante en pantalla.
+    - *Caso 2:* Si ya respondió y la pareja no $\rightarrow$ envía un toque de afecto en segundo plano (Outbox offline + reconexión automática).
+    - *Caso 3:* Si ambos respondieron $\rightarrow$ abre directamente la pantalla de resultados revelados.
+- [x] **Toque de Afecto Instantáneo:**
+  - Animación de corazón flotante en pantalla (`FloatingHeartBurst` al enviar + `AffectionHeartOverlay` al recibir en vivo).
   - Vibración háptica en el dispositivo móvil mediante `navigator.vibrate([40, 60, 40])`.
-  - Registro del evento en `affection_events` con `client_mutation_id` para evitar duplicados por toques accidentales repetidos.
+  - Registro del evento en `affection_events` con `client_mutation_id` y ventana anti-rebote de 2 s para evitar duplicados por toques accidentales repetidos.
 
 ---
 
