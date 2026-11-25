@@ -1,8 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from '@tanstack/react-router'
-import { motion } from 'framer-motion'
-import { Heart, KeyRound, LogOut, Sparkles, User, Users, Wifi } from 'lucide-react'
+import { KeyRound, LogOut, Sparkles, User, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { ActivityHistoryList, TodayActivityCard } from './features/activities/components'
 import { AmbientRibbons, UnverifiedEmailBanner } from './features/auth/components'
 import { useAuth } from './features/auth/hooks/useAuth'
 import { PairingSettingsModal } from './features/couple/components'
@@ -20,36 +20,31 @@ const queryClient = new QueryClient({
 
 /**
  * Guarded Dashboard Page for authenticated couple users.
- * Features the UnverifiedEmailBanner, couple profile info, affection taps, and secure logout.
+ * Protagonist: Today's Blind Reveal Activity + Revealed History below.
  */
 export function DashboardPage() {
   const { user, logout, isLoggingOut } = useAuth()
   const { partner } = useCouple()
-  const [hearts, setHearts] = useState(0)
   const [isPairingModalOpen, setIsPairingModalOpen] = useState(false)
 
   return (
-    <div className="relative min-h-[100dvh] w-full flex flex-col justify-between overflow-x-hidden bg-[#080c14] text-white pt-safe pb-safe">
+    <div className="relative min-h-[100dvh] w-full flex flex-col justify-between overflow-x-hidden bg-[#FFFFFF] text-[#18181B] pt-safe pb-safe">
       <AmbientRibbons />
 
       {/* Top Banner if email is not yet verified */}
       <UnverifiedEmailBanner />
 
-      <header className="w-full max-w-md mx-auto flex justify-between items-center px-6 py-4 border-b border-white/5 text-xs text-slate-400 relative z-10">
-        <span className="font-semibold tracking-wider text-rose-400 flex items-center gap-1.5">
-          <Sparkles className="w-4 h-4" /> LazUs
+      <header className="w-full max-w-md mx-auto flex justify-between items-center px-5 py-4 border-b border-[#EAEAEA] text-xs text-zinc-500 relative z-10 bg-white/80 backdrop-blur-md">
+        <span className="font-semibold tracking-wider text-[#18181B] flex items-center gap-1.5">
+          <Sparkles className="w-4 h-4 text-[#FF5C7A]" /> LazUs
         </span>
 
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1 bg-slate-800/80 px-2.5 py-1 rounded-full text-emerald-400 border border-emerald-500/20">
-            <Wifi className="w-3.5 h-3.5" /> PWA Ready
-          </span>
-
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setIsPairingModalOpen(true)}
             aria-label="Vincular pareja o ver código"
-            className="p-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-slate-400 hover:text-pink-400 transition-colors cursor-pointer border border-white/5 flex items-center gap-1 text-xs"
+            className="p-2 rounded-lg bg-white hover:bg-zinc-50 text-zinc-600 hover:text-[#18181B] transition-colors cursor-pointer border border-[#EAEAEA]"
             title="Vincular Pareja"
           >
             <KeyRound className="w-4 h-4" />
@@ -60,71 +55,69 @@ export function DashboardPage() {
             onClick={() => void logout()}
             disabled={isLoggingOut}
             aria-label="Cerrar sesión"
-            className="p-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer border border-white/5"
+            className="p-2 rounded-lg bg-white hover:bg-zinc-50 text-zinc-600 hover:text-rose-600 transition-colors cursor-pointer border border-[#EAEAEA]"
           >
             <LogOut className="w-4 h-4" />
           </button>
         </div>
       </header>
 
-      <main className="relative z-10 flex flex-col items-center gap-6 my-auto px-6 py-8 text-center max-w-md mx-auto w-full">
-        {/* User Greeting & Couple Status */}
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-slate-300">
-            <User className="w-3.5 h-3.5 text-rose-400" />
+      <main className="relative z-10 flex flex-col items-center gap-6 px-5 py-6 max-w-md mx-auto w-full flex-1">
+        {/* Saludo y estado de pareja */}
+        <div className="w-full flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#EAEAEA] text-xs text-zinc-600">
+            <User className="w-3.5 h-3.5 text-[#FF5C7A]" />
             <span>
-              Hola, <strong className="text-white font-medium">{user?.displayName || 'Amor'}</strong>
+              Hola, <strong className="text-[#18181B] font-medium">{user?.displayName || 'Amor'}</strong>
             </span>
           </div>
 
           {partner ? (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-pink-500/10 border border-pink-500/20 text-xs text-pink-300">
-              <Users className="w-3.5 h-3.5 text-pink-400" />
-              <span>Unido con <strong className="text-white">{partner.display_name}</strong></span>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#EAEAEA] text-xs text-zinc-600">
+              <Users className="w-3.5 h-3.5 text-[#FF5C7A]" />
+              <span>
+                Con <strong className="text-[#18181B] font-medium">{partner.display_name}</strong>
+              </span>
             </div>
           ) : (
             <button
               type="button"
               onClick={() => setIsPairingModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 hover:bg-amber-500/20 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-50 border border-rose-200 text-xs text-rose-700 hover:bg-rose-100 transition-colors cursor-pointer"
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <Sparkles className="w-3.5 h-3.5" />
               <span>Sin vincular • Toca aquí</span>
             </button>
           )}
         </div>
 
-        {/* Center Pulsing Heart */}
-        <motion.div
-          animate={{ scale: [1, 1.06, 1] }}
-          transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
-          className="relative"
-        >
-          <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-rose-500/30 to-purple-500/30 flex items-center justify-center border border-rose-500/30 shadow-lg shadow-rose-500/10 backdrop-blur-md">
-            <Heart className="w-14 h-14 text-rose-500 fill-rose-500/80" />
+        {/* Protagonista: Reto de Hoy + Historial debajo */}
+        {partner ? (
+          <div className="w-full space-y-6">
+            <TodayActivityCard />
+            <ActivityHistoryList />
           </div>
-        </motion.div>
+        ) : (
+          <div className="w-full rounded-2xl border border-[#EAEAEA] bg-white p-6 text-center space-y-4 my-auto">
+            <div className="space-y-1.5">
+              <h1 className="text-xl font-bold tracking-tight text-[#18181B]">
+                Vincula tu espacio compartido
+              </h1>
+              <p className="text-sm text-zinc-500">
+                Acerca tu móvil a la pulsera NFC de tu pareja o genera un código digital para
+                desbloquear las actividades diarias.
+              </p>
+            </div>
 
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold tracking-tight text-white">
-            {partner ? `Espacio de ${user?.displayName || 'Tú'} & ${partner.display_name}` : 'Espacio Íntimo para Parejas'}
-          </h1>
-          <p className="text-sm text-slate-400 max-w-xs">
-            {partner
-              ? 'Su espacio compartido está activo. Toquen sus pulseras o completen la actividad diaria juntos.'
-              : 'Acerca tu móvil a la pulsera de tu pareja o genera un código para comenzar el ritual.'}
-          </p>
-        </div>
-
-        {/* Interaction Button */}
-        <button
-          type="button"
-          onClick={() => setHearts((h) => h + 1)}
-          className="specular-button px-6 py-3.5 rounded-full text-white font-medium text-sm flex items-center gap-2 cursor-pointer active:scale-95"
-        >
-          <Heart className="w-4 h-4 fill-white" />
-          Toques de afecto: <span className="font-bold">{hearts}</span>
-        </button>
+            <button
+              type="button"
+              onClick={() => setIsPairingModalOpen(true)}
+              className="w-full py-3 rounded-xl bg-[#18181B] text-white text-sm font-medium hover:bg-zinc-800 transition-colors cursor-pointer"
+            >
+              Vincular pareja ahora
+            </button>
+          </div>
+        )}
       </main>
 
       {/* Pairing Settings Modal (Generar / Canjear Código LZ-XXXX) */}
@@ -132,10 +125,6 @@ export function DashboardPage() {
         isOpen={isPairingModalOpen}
         onClose={() => setIsPairingModalOpen(false)}
       />
-
-      <footer className="w-full text-xs text-slate-500 py-3 border-t border-white/5 text-center relative z-10">
-        React 19 • TanStack Router • Dexie • Cloudflare
-      </footer>
     </div>
   )
 }
