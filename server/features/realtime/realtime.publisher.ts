@@ -76,3 +76,23 @@ export class DurableObjectRealtimePublisher implements CoupleEventPublisher {
 export function createRealtimePublisher(namespace?: DurableObjectNamespace): CoupleEventPublisher {
   return new DurableObjectRealtimePublisher(namespace)
 }
+
+export async function dispatchRealtimeTask(
+  context: { readonly executionCtx?: { waitUntil?: (promise: Promise<unknown>) => void } },
+  task: Promise<unknown>
+): Promise<void> {
+  const safeTask = task.catch(() => undefined)
+  let scheduledInCtx = false
+  try {
+    const executionCtx = context.executionCtx
+    if (executionCtx?.waitUntil) {
+      executionCtx.waitUntil(safeTask)
+      scheduledInCtx = true
+    }
+  } catch {
+    // En entornos sin ExecutionContext (ej. Vitest app.request) se ejecuta inline
+  }
+  if (!scheduledInCtx) {
+    await safeTask
+  }
+}

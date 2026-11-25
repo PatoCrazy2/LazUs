@@ -3,6 +3,7 @@ import { zValidator } from '@hono/zod-validator'
 import { SubmitActivityInputSchema } from '../../../shared'
 import { getDb, type DbClient } from '../../db'
 import { authMiddleware, type AuthContextVariables } from '../auth/auth.middleware'
+import { createRealtimePublisher, dispatchRealtimeTask } from '../realtime/realtime.publisher'
 import {
   ActivityForbiddenError,
   ActivityImmutableConflictError,
@@ -13,7 +14,10 @@ import { ActivitiesService } from './activities.service'
 
 function getActivitiesService(c: any): ActivitiesService {
   const db: DbClient = c.get('db') || getDb(c.env?.DATABASE_URL || process.env.DATABASE_URL)
-  return new ActivitiesService(db)
+  const publisher = createRealtimePublisher(c.env?.COUPLE_ROOM)
+  return new ActivitiesService(db, () => new Date(), fetch, publisher, (task) =>
+    dispatchRealtimeTask(c, task)
+  )
 }
 
 function mapActivityError(c: any, error: unknown) {
@@ -33,7 +37,11 @@ function mapActivityError(c: any, error: unknown) {
 }
 
 export const activitiesRouter = new Hono<{
-  Bindings: { DATABASE_URL?: string; ENVIRONMENT?: string }
+  Bindings: {
+    DATABASE_URL?: string
+    ENVIRONMENT?: string
+    COUPLE_ROOM?: DurableObjectNamespace
+  }
   Variables: AuthContextVariables & { db: DbClient }
 }>()
 

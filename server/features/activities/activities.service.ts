@@ -10,6 +10,7 @@ import type {
 import type { DbClient } from '../../db'
 import type { dailyActivities } from '../../db/schema'
 import { INITIAL_PROMPTS } from '../../db/seeds/prompts'
+import type { CoupleEventPublisher } from '../realtime/realtime.publisher'
 import {
   ActivityForbiddenError,
   ActivityIdempotencyHitError,
@@ -49,7 +50,9 @@ export class ActivitiesService {
   constructor(
     db: DbClient,
     private readonly nowProvider: () => Date = () => new Date(),
-    private readonly fetchImpl: typeof fetch = fetch
+    private readonly fetchImpl: typeof fetch = fetch,
+    private readonly realtimePublisher?: CoupleEventPublisher,
+    private readonly scheduleBackground?: (task: Promise<unknown>) => Promise<void> | void
   ) {
     this.repo = new ActivitiesRepository(db)
   }
@@ -115,8 +118,9 @@ export class ActivitiesService {
     const coupleCtx = await this.requireCoupleContext(userId)
     const { logicalDate } = computeLogicalDateParts(coupleCtx.timezone, this.nowProvider())
 
+    let result: SubmitActivityResponse
     try {
-      return await this.repo.executeAtomicSubmission({
+      result = await this.repo.executeAtomicSubmission({
         userId,
         coupleId: coupleCtx.coupleId,
         todayLogicalDate: logicalDate,
@@ -126,10 +130,40 @@ export class ActivitiesService {
       })
     } catch (error) {
       if (error instanceof ActivityIdempotencyHitError) {
+        // Reintento idempotente: no duplicar evento WebSocket
         return error.responseBody as SubmitActivityResponse
       }
       throw error
     }
+
+    if (this.realtimePublisher) {
+      const timestamp = this.nowProvider().toISOString()
+      const isRevealed = result.activity_status === 'revealed'
+      const publishTask = this.realtimePublisher.publish({
+        coupleId: coupleCtx.coupleId,
+        audience: isRevealed ? 'both' : 'partner_only',
+        excludeUserId: isRevealed ? undefined : userId,
+        event: isRevealed
+          ? {
+              type: 'activity_ready_to_reveal',
+              activityId: result.activity_id,
+              timestamp,
+            }
+          : {
+              type: 'partner_submission_completed',
+              activityId: result.activity_id,
+              timestamp,
+            },
+      })
+
+      if (this.scheduleBackground) {
+        await this.scheduleBackground(publishTask)
+      } else {
+        await publishTask.catch(() => undefined)
+      }
+    }
+
+    return result
   }
 
   async getActivityResults(userId: string, activityId: string): Promise<TodayActivityResponse> {
