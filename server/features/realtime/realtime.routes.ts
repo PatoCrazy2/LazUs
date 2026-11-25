@@ -3,7 +3,12 @@ import { Hono } from 'hono'
 import { getDb, type DbClient } from '../../db'
 import { coupleMembers, couples } from '../../db/schema'
 import { authMiddleware, type AuthContextVariables } from '../auth/auth.middleware'
-import { INTERNAL_COUPLE_ID_HEADER, INTERNAL_USER_ID_HEADER } from './couple.durable-object'
+import {
+  INTERNAL_COUPLE_ID_HEADER,
+  INTERNAL_ROOM_SCOPE_HEADER,
+  INTERNAL_USER_ID_HEADER,
+} from './couple.durable-object'
+import { getUserWaitingRoomKey } from './realtime.publisher'
 
 const ALLOWED_WS_FORWARD_HEADERS = [
   'upgrade',
@@ -25,30 +30,14 @@ export const realtimeRouter = new Hono<{
 
 /**
  * GET /api/realtime/ws
- * Punto de entrada autenticado al Durable Object de la pareja.
- * Regla de autoridad: el couple_id SIEMPRE se resuelve en PostgreSQL a partir
- * de la sesión verificada, nunca desde parámetros enviados por el cliente.
+ * Punto de entrada autenticado al Durable Object:
+ * - Si el usuario tiene pareja activa en PostgreSQL -> enruta a idFromName(coupleId) (scope: 'couple').
+ * - Si aún no tiene pareja activa -> enruta a su sala de espera hibernada user:<userId> (scope: 'user')
+ *   para recibir 'couple_paired' al instante sin polling contra PostgreSQL.
  */
 realtimeRouter.get('/ws', authMiddleware, async (c) => {
   const user = c.get('user')
   const db: DbClient = c.get('db') || getDb(c.env?.DATABASE_URL || process.env.DATABASE_URL)
-
-  const [membership] = await db
-    .select({
-      coupleId: couples.id,
-      status: couples.status,
-    })
-    .from(coupleMembers)
-    .innerJoin(couples, eq(coupleMembers.coupleId, couples.id))
-    .where(and(eq(coupleMembers.userId, user.id), eq(couples.status, 'active')))
-    .limit(1)
-
-  if (!membership) {
-    return c.json(
-      { error: 'Debes tener una pareja vinculada activa para conectarte en tiempo real' },
-      403
-    )
-  }
 
   const upgradeHeader = c.req.header('upgrade')
   if (!upgradeHeader || upgradeHeader.toLowerCase() !== 'websocket') {
@@ -60,6 +49,16 @@ realtimeRouter.get('/ws', authMiddleware, async (c) => {
     return c.json({ error: 'Servicio de tiempo real no disponible en este entorno' }, 503)
   }
 
+  const [membership] = await db
+    .select({
+      coupleId: couples.id,
+      status: couples.status,
+    })
+    .from(coupleMembers)
+    .innerJoin(couples, eq(coupleMembers.coupleId, couples.id))
+    .where(and(eq(coupleMembers.userId, user.id), eq(couples.status, 'active')))
+    .limit(1)
+
   const forwardHeaders = new Headers()
   for (const headerName of ALLOWED_WS_FORWARD_HEADERS) {
     const value = c.req.header(headerName)
@@ -68,9 +67,18 @@ realtimeRouter.get('/ws', authMiddleware, async (c) => {
     }
   }
   forwardHeaders.set(INTERNAL_USER_ID_HEADER, user.id)
-  forwardHeaders.set(INTERNAL_COUPLE_ID_HEADER, membership.coupleId)
 
-  const id = namespace.idFromName(membership.coupleId)
+  let roomKey: string
+  if (membership) {
+    roomKey = membership.coupleId
+    forwardHeaders.set(INTERNAL_ROOM_SCOPE_HEADER, 'couple')
+    forwardHeaders.set(INTERNAL_COUPLE_ID_HEADER, membership.coupleId)
+  } else {
+    roomKey = getUserWaitingRoomKey(user.id)
+    forwardHeaders.set(INTERNAL_ROOM_SCOPE_HEADER, 'user')
+  }
+
+  const id = namespace.idFromName(roomKey)
   const stub = namespace.get(id)
   const doRequest = new Request('https://couple-room/connect', {
     method: 'GET',

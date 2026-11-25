@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { app } from '../../server'
 import {
   INTERNAL_COUPLE_ID_HEADER,
+  INTERNAL_ROOM_SCOPE_HEADER,
   INTERNAL_USER_ID_HEADER,
 } from '../../server/features/realtime/couple.durable-object'
 import { getTestEnv, truncateAuthTables } from '../helpers/db'
@@ -77,8 +78,20 @@ describe('Realtime Route Authorization - GET /api/realtime/ws', () => {
     expect(res.status).toBe(401)
   })
 
-  it('2. Rechaza con 403 si el usuario autenticado no tiene pareja activa', async () => {
+  it('2. Enruta a sala de espera hibernada user:<userId> si el usuario autenticado aún no tiene pareja activa', async () => {
     const solo = await registerUser('realtime-solo@example.com', 'Solo')
+
+    let forwardedRequest: Request | null = null
+    const stubFetch = vi.fn(async (req: Request) => {
+      forwardedRequest = req
+      return new Response(JSON.stringify({ connected: true }), { status: 200 })
+    })
+    const idFromName = vi.fn().mockReturnValue('waiting-stub-id')
+    const get = vi.fn().mockReturnValue({ fetch: stubFetch })
+    const envWithDo = {
+      ...baseEnv,
+      COUPLE_ROOM: { idFromName, get } as unknown as DurableObjectNamespace,
+    }
 
     const res = await app.request(
       '/api/realtime/ws',
@@ -89,10 +102,16 @@ describe('Realtime Route Authorization - GET /api/realtime/ws', () => {
           Upgrade: 'websocket',
         },
       },
-      baseEnv
+      envWithDo
     )
 
-    expect(res.status).toBe(403)
+    expect(res.status).toBe(200)
+    expect(idFromName).toHaveBeenCalledWith(`user:${solo.userId}`)
+    expect(forwardedRequest).not.toBeNull()
+    expect(forwardedRequest!.headers.get(INTERNAL_USER_ID_HEADER)).toBe(solo.userId)
+    expect(forwardedRequest!.headers.get(INTERNAL_ROOM_SCOPE_HEADER)).toBe('user')
+    expect(forwardedRequest!.headers.get(INTERNAL_COUPLE_ID_HEADER)).toBeNull()
+    expect(forwardedRequest!.headers.get('cookie')).toBeNull()
   })
 
   it('3. Rechaza con 426 si falta la cabecera Upgrade: websocket', async () => {
@@ -162,6 +181,7 @@ describe('Realtime Route Authorization - GET /api/realtime/ws', () => {
     expect(stubFetch).toHaveBeenCalledTimes(1)
     expect(forwardedRequest).not.toBeNull()
     expect(forwardedRequest!.headers.get(INTERNAL_USER_ID_HEADER)).toBe(userA.userId)
+    expect(forwardedRequest!.headers.get(INTERNAL_ROOM_SCOPE_HEADER)).toBe('couple')
     expect(forwardedRequest!.headers.get(INTERNAL_COUPLE_ID_HEADER)).toBe(coupleId)
     // Nunca reenviar cookies de sesión al Durable Object
     expect(forwardedRequest!.headers.get('cookie')).toBeNull()

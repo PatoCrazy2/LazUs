@@ -43,6 +43,15 @@ export const AffectionReceivedEventSchema = z
   })
   .strict()
 
+export const CouplePairedEventSchema = z
+  .object({
+    type: z.literal('couple_paired'),
+    coupleId: z.string().uuid(),
+    partnerDisplayName: z.string().min(1).max(120),
+    timestamp: isoTimestampSchema,
+  })
+  .strict()
+
 // Unión discriminada estricta — Garantía Zero-Leak: imposible incluir content/payload/media_key
 export const SafeRealtimeEventSchema = z.discriminatedUnion('type', [
   PartnerOnlineEventSchema,
@@ -50,6 +59,7 @@ export const SafeRealtimeEventSchema = z.discriminatedUnion('type', [
   PartnerSubmissionCompletedEventSchema,
   ActivityReadyToRevealEventSchema,
   AffectionReceivedEventSchema,
+  CouplePairedEventSchema,
 ])
 
 export type SafeRealtimeEvent = z.infer<typeof SafeRealtimeEventSchema>

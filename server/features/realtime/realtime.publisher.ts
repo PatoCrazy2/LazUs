@@ -9,6 +9,11 @@ export interface PublishCoupleEventOptions {
   event: SafeRealtimeEvent
   audience?: RealtimeBroadcastAudience
   excludeUserId?: string
+  roomKey?: string
+}
+
+export function getUserWaitingRoomKey(userId: string): string {
+  return `user:${userId}`
 }
 
 export interface CoupleEventPublisher {
@@ -43,7 +48,8 @@ export class DurableObjectRealtimePublisher implements CoupleEventPublisher {
     }
 
     try {
-      const id = this.namespace.idFromName(options.coupleId)
+      const targetRoomKey = options.roomKey ?? options.coupleId
+      const id = this.namespace.idFromName(targetRoomKey)
       const stub = this.namespace.get(id)
       const response = await stub.fetch('https://couple-room/broadcast', {
         method: 'POST',

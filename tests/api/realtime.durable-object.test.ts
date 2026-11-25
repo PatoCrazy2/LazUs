@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   CoupleDurableObject,
   INTERNAL_COUPLE_ID_HEADER,
+  INTERNAL_ROOM_SCOPE_HEADER,
   INTERNAL_USER_ID_HEADER,
   type CoupleRoomRuntime,
 } from '../../server/features/realtime/couple.durable-object'
@@ -46,6 +47,7 @@ function createFakeSocket(): FakeSocket {
 function createFakeHibernationState() {
   const acceptedSockets: Array<{ ws: FakeSocket; tags: string[] }> = []
   let autoResponsePair: { request: string; response: string } | null = null
+  const deleteAll = vi.fn().mockResolvedValue(undefined)
 
   const state = {
     acceptWebSocket(ws: WebSocket, tags?: string[]) {
@@ -59,11 +61,15 @@ function createFakeHibernationState() {
     setWebSocketAutoResponse(pair: { request: string; response: string }) {
       autoResponsePair = pair
     },
+    storage: {
+      deleteAll,
+    },
   }
 
   return {
     state: state as unknown as DurableObjectState,
     acceptedSockets,
+    deleteAll,
     getAutoResponsePair: () => autoResponsePair,
   }
 }
@@ -326,5 +332,55 @@ describe('CoupleDurableObject & RealtimePublisher - Fase 1 (Hibernation API & Ze
     expect(accepted).toBe(true)
     expect(idFromName).toHaveBeenCalledWith(coupleId)
     expect(stubFetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('7. Sala de espera pre-pareja (roomScope=user): entrega couple_paired, cierra socket temporal y limpia storage', async () => {
+    const fakeState = createFakeHibernationState()
+    const { runtime, createdServers } = createTestRuntime()
+    const waitingRoom = new CoupleDurableObject(fakeState.state, {}, runtime)
+
+    const waitingConnectReq = new Request('https://couple-room/connect', {
+      method: 'GET',
+      headers: {
+        Upgrade: 'websocket',
+        [INTERNAL_USER_ID_HEADER]: userB,
+        [INTERNAL_ROOM_SCOPE_HEADER]: 'user',
+      },
+    })
+
+    await waitingRoom.fetch(waitingConnectReq)
+    const wsB = createdServers[0]
+    expect(wsB.sent).toHaveLength(0)
+
+    const broadcastRes = await waitingRoom.fetch(
+      new Request('https://couple-room/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          audience: 'both',
+          event: {
+            type: 'couple_paired',
+            coupleId,
+            partnerDisplayName: 'Emilio',
+            timestamp: '2026-11-25T18:10:00.000Z',
+          },
+        }),
+      })
+    )
+
+    expect(broadcastRes.status).toBe(200)
+    expect(await broadcastRes.json()).toEqual({ delivered: 1 })
+    expect(wsB.sent.map((m) => JSON.parse(m))).toEqual([
+      {
+        type: 'couple_paired',
+        coupleId,
+        partnerDisplayName: 'Emilio',
+        timestamp: '2026-11-25T18:10:00.000Z',
+      },
+    ])
+    // Mitigación de objetos residuales: cierra socket temporal y limpia storage
+    expect(wsB.closed).toBe(true)
+    expect(wsB.closeCode).toBe(1000)
+    expect(fakeState.deleteAll).toHaveBeenCalledTimes(1)
   })
 })

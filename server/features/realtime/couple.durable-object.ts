@@ -7,10 +7,14 @@ import {
 
 export const INTERNAL_USER_ID_HEADER = 'x-lazus-user-id'
 export const INTERNAL_COUPLE_ID_HEADER = 'x-lazus-couple-id'
+export const INTERNAL_ROOM_SCOPE_HEADER = 'x-lazus-room-scope'
+
+export type CoupleRoomScope = 'couple' | 'user'
 
 export interface CoupleSocketAttachment {
   userId: string
-  coupleId: string
+  coupleId: string | null
+  roomScope: CoupleRoomScope
   connectedAt: string
 }
 
@@ -72,10 +76,16 @@ export class CoupleDurableObject {
   private readAttachment(ws: WebSocket): CoupleSocketAttachment | null {
     try {
       const raw = ws.deserializeAttachment() as Partial<CoupleSocketAttachment> | null | undefined
-      if (raw && typeof raw.userId === 'string' && typeof raw.coupleId === 'string') {
+      if (raw && typeof raw.userId === 'string') {
+        const roomScope: CoupleRoomScope = raw.roomScope === 'user' ? 'user' : 'couple'
+        const coupleId = typeof raw.coupleId === 'string' ? raw.coupleId : null
+        if (roomScope === 'couple' && !coupleId) {
+          return null
+        }
         return {
           userId: raw.userId,
-          coupleId: raw.coupleId,
+          coupleId,
+          roomScope,
           connectedAt: typeof raw.connectedAt === 'string' ? raw.connectedAt : this.nowIso(),
         }
       }
@@ -148,9 +158,12 @@ export class CoupleDurableObject {
       })
     }
 
+    const roomScope: CoupleRoomScope =
+      request.headers.get(INTERNAL_ROOM_SCOPE_HEADER) === 'user' ? 'user' : 'couple'
     const userId = request.headers.get(INTERNAL_USER_ID_HEADER)
     const coupleId = request.headers.get(INTERNAL_COUPLE_ID_HEADER)
-    if (!userId || !coupleId) {
+
+    if (!userId || (roomScope === 'couple' && !coupleId)) {
       return new Response(JSON.stringify({ error: 'Missing couple room identity headers' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
@@ -158,6 +171,20 @@ export class CoupleDurableObject {
     }
 
     const now = this.nowIso()
+
+    if (roomScope === 'user') {
+      const { client, server } = this.runtime.createWebSocketPair()
+      this.ctx.acceptWebSocket(server, [userId])
+      const attachment: CoupleSocketAttachment = {
+        userId,
+        coupleId: null,
+        roomScope: 'user',
+        connectedAt: now,
+      }
+      server.serializeAttachment(attachment)
+      return this.runtime.createUpgradeResponse(client)
+    }
+
     const existingSockets = this.ctx.getWebSockets()
     let hadOwnSocket = false
     const connectedPartnerIds = new Set<string>()
@@ -178,6 +205,7 @@ export class CoupleDurableObject {
     const attachment: CoupleSocketAttachment = {
       userId,
       coupleId,
+      roomScope: 'couple',
       connectedAt: now,
     }
     server.serializeAttachment(attachment)
@@ -233,6 +261,25 @@ export class CoupleDurableObject {
       parsed.data.excludeUserId
     )
 
+    // Autolimpieza de sala de espera temporal al completarse el emparejamiento (0 bytes residuales)
+    if (parsed.data.event.type === 'couple_paired') {
+      for (const ws of this.ctx.getWebSockets()) {
+        const att = this.readAttachment(ws)
+        if (att?.roomScope === 'user') {
+          try {
+            ws.close(1000, 'Couple paired')
+          } catch {
+            // Ya cerrado
+          }
+        }
+      }
+      try {
+        await this.ctx.storage?.deleteAll?.()
+      } catch {
+        // Storage opcional en tests unitarios
+      }
+    }
+
     return new Response(JSON.stringify({ delivered }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -274,7 +321,7 @@ export class CoupleDurableObject {
       // Ya cerrado
     }
 
-    if (!attachment) return
+    if (!attachment || attachment.roomScope === 'user') return
 
     const remainingSockets = this.ctx.getWebSockets().filter((candidate) => candidate !== ws)
     const stillHasOwnSocket = remainingSockets.some((candidate) => {
