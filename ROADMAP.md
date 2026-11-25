@@ -12,7 +12,7 @@
    - *Nota técnica:* Se prescinde de "Sign in with Apple" inicialmente para evitar el coste obligatorio de \$99 USD/año del Apple Developer Program. Google OAuth es 100% gratuito en Google Cloud.
 2. **Emparejamiento:** Híbrido (Tag NFC físico + Enlace/Código digital de respaldo).
    - *Nota de producto:* ⚠️ **Revisar a futuro:** Analizar si hacer el emparejamiento 100% exclusivo con la pulsera física NFC aumenta la tasa de conversión y el atractivo comercial como producto físico ("hardware-enabled intimacy").
-3. **Actividades Diarias:** **Catálogo curado por el sistema**. Cada reto define su formato de respuesta (solo texto, solo foto, o mixto) según la temática del día.
+3. **Actividades Diarias:** **Catálogo curado por el sistema** organizado en 3 ejes ortogonales (**Tema/Categoría** con color e ícono propios, **Tono** y **Ocasión**, incluyendo fechas especiales y aniversario) y múltiples formatos de respuesta (`text_only`, `choice`, `scale`, `prediction`, `music` vía iTunes Search API con portada HD + preview 30s + enlace externo, y formatos multimedia `photo_only`, `both`, `voice` respaldados por R2).
 4. **Persistencia y Recuerdos:** Las respuestas diarias son dinámicas. Al finalizar cada semana, el sistema genera automáticamente un **Collage Semanal** con los momentos y fotos destacadas de la pareja, listo para guardarse en su álbum privado y compartirse en redes sociales (estilo Yope/BeReal).
 5. **Toques de Afecto NFC:** **Toque único instantáneo** (vibración háptica + corazón directo al aproximar el móvil a la pulsera).
    - *Nota de producto:* ⚠️ **Revisar a futuro:** Evaluar si añadir un menú de reacciones adicionales (beso, abrazo, etc.).
@@ -24,7 +24,7 @@
 ```text
 [x] Hito 1: Autenticación Híbrida y Sesión (feature/auth)
 [x] Hito 2: Emparejamiento de Pareja y NFC Linking (feature/couple)
-[ ] Hito 3: Catálogo de Actividades y Blind Reveal (feature/activities)
+[x] Hito 3: Catálogo de Actividades y Blind Reveal (feature/activities)
 [ ] Hito 4: Tiempo Real con Durable Objects (feature/realtime)
 [ ] Hito 5: Rutas NFC y Toque de Afecto Háptico (feature/nfc)
 [ ] Hito 6: Almacenamiento en R2 y Collage Semanal (feature/media)
@@ -94,22 +94,31 @@
 
 ---
 
-### [ ] Hito 3: Catálogo de Actividades y Mecánica Blind Reveal (`feature/activities`)
+### [✅] Hito 3: Catálogo de Actividades y Mecánica Blind Reveal (`feature/activities`)
 
-**Objetivo:** Implementar la experiencia central de la app: pregunta diaria del sistema y revelación bloqueada hasta que ambos completen su parte.
+**Objetivo:** Implementar la experiencia central de la app: catálogo curado con 3 ejes (Tema, Tono, Ocasión), zona horaria por pareja, formatos interactivos y revelación bloqueada hasta que ambos completen su parte.
 
-#### Criterios de Aceptación:
-- [ ] **Banco de Actividades del Sistema:**
-  - Tabla de actividades predefinidas con soporte para tipos de respuesta: `text_only`, `photo_only`, `both`.
-  - Selector automático de la actividad diaria según la fecha lógica local de la pareja.
-- [ ] **Los 3 Estados Visuales en la PWA:**
-  - **Estado A (Pendiente):** Muestra el prompt del día y el formulario correspondiente (input de texto y/o selector de foto).
-  - **Estado B (Esperando):** Respuesta guardada localmente en Outbox y en PostgreSQL. Pantalla con micro-animación emocional: *"Respuesta guardada ❤️. Esperando a tu pareja..."*.
-  - **Estado C (Revelado):** Ambos completaron $\rightarrow$ Animación de revelación y visualización de ambas respuestas lado a lado.
-- [ ] **Regla Zero-Leak (Invariante de Seguridad):**
-  - La consulta SQL física **omite** el texto/foto de la pareja mientras la actividad no esté en estado `revealed`.
+#### ✅ Criterios de Aceptación (COMPLETADA):
+- [x] **Banco de Actividades del Sistema (3 Ejes) y Zona Horaria:**
+  - Columna `timezone` (IANA, ej. `America/Mexico_City`) y `max_romance_intensity` en `couples` para calcular el `logical_date` exacto de la pareja sin desfase UTC.
+  - Tabla `activity_prompts` con ejes separados:
+    - `category` (Tema con color e ícono propios): `getting_to_know`, `memories`, `future`, `gratitude`, `life_values`, `music`, `romance`, `play`, `together_irl`, `daily_checkin`.
+    - `tone`: `light`, `playful`, `tender`, `deep`.
+    - `occasion`: `daily`, `special_date`, `long_distance` + soporte de `special_date` (`MM-DD` o `anniversary`) e `intensity` (`1..3`).
+    - `response_type`: `text_only`, `choice`, `scale`, `prediction`, `music`, `photo_only`, `both`, `voice`, con `prompt_config` (`jsonb`).
+  - `submissions` con `payload` (`jsonb`) inmutable (sellada al enviar) y vigencia diaria estricta.
+  - Selector automático diario: prioridad a fechas especiales / aniversario, rotación sin repetir prompt ni categoría consecutiva.
+- [x] **Formatos Interactivos en Hito 3 (y base lista para Hito 6):**
+  - Funcionales en Hito 3: `text_only`, `choice` (opción múltiple), `scale` (check-in / emoji), `prediction` (respuesta + predicción de la pareja con puntaje al revelar) y `music` híbrido (buscador vía iTunes Search API con portada HD, preview de 30s en reproductor propio y enlace externo opcional).
+  - Preparados en esquema/contrato para conectar R2 en Hito 6: `photo_only`, `both` y `voice` (notas de voz).
+- [x] **Los 3 Estados Visuales en la PWA:**
+  - **Estado A (Pendiente):** Chip de categoría (color + ícono), prompt del día y control interactivo según `response_type`.
+  - **Estado B (Esperando):** Respuesta sellada localmente en Dexie/Outbox y en PostgreSQL. Pantalla con micro-animación emocional: *"Respuesta guardada ❤️. Esperando a tu pareja..."*.
+  - **Estado C (Revelado):** Ambos completaron $\rightarrow$ Botón *"Tocar para revelar"*, animación de revelación, visualización lado a lado (incluyendo reproductor de preview 30s en `music` o puntaje en `prediction`) e historial revelado.
+- [x] **Regla Zero-Leak (Invariante de Seguridad):**
+  - La consulta SQL física **omite** el contenido/payload/media de la pareja mientras la actividad no esté en estado `revealed`.
   - Prohibido filtrar o tapar datos en el cliente mediante JavaScript.
-- [ ] **Tests:** Tests de integración que comprueben que la respuesta del partner no viaja en el JSON antes del reveal.
+- [x] **Tests:** Tests de integración que comprueben Zero-Leak, inmutabilidad (`409`), vigencia diaria, idempotencia (`client_mutation_id`), fechas especiales y desbloqueo atómico.
 
 ---
 
@@ -148,9 +157,9 @@
 
 ---
 
-### [ ] Hito 6: Almacenamiento en R2 y Collage Semanal de Pareja (`feature/media`)
+### [ ] Hito 6: Almacenamiento en R2 (Fotos, Notas de Voz) y Collage Semanal (`feature/media`)
 
-**Objetivo:** Manejar fotografías privadas a coste de transferencia $0 y generar el resumen semanal compartible.
+**Objetivo:** Manejar fotografías y notas de voz privadas (`photo_only`, `both`, `voice`) a coste de transferencia $0 y generar el resumen semanal compartible.
 
 #### Criterios de Aceptación:
 - [ ] **Subida Directa a R2:**

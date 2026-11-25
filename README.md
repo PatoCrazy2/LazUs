@@ -63,7 +63,10 @@ Copia la plantilla de desarrollo:
 ```bash
 cp .env.example .env.local
 ```
-*(Para Cloudflare Workers en local, las variables ya se encuentran configuradas en `.dev.vars`).*
+*(Para Cloudflare Workers en local, las variables ya se encuentran configuradas en `.dev.vars` con `127.0.0.1:5432`)*.
+
+> [!TIP]
+> **Resiliencia en Windows / Docker:** Se utiliza la dirección IPv4 directa `127.0.0.1` en lugar de `localhost` en la cadena de conexión (`postgresql://postgres:postgrespassword@127.0.0.1:5432/lazus_db`). Esto evita que el stack de red de Windows intente resolver primero por IPv6 (`::1`), previniendo el congelamiento de 21 segundos por timeout TCP.
 
 ### 4. Iniciar la base de datos local con Docker
 ```bash
@@ -74,10 +77,11 @@ Verifica que el contenedor esté corriendo y saludable:
 docker compose ps
 ```
 
-### 5. Aplicar las migraciones de Base de Datos (Drizzle ORM)
-Aplica las 11 tablas de dominio e índices en tu PostgreSQL local (usuarios, sesiones, tokens, rate limit, parejas, actividades, etc.):
+### 5. Aplicar las migraciones y seed de Base de Datos (Drizzle ORM)
+Aplica las tablas de dominio e índices en tu PostgreSQL local y carga el catálogo inicial de actividades:
 ```bash
 pnpm run db:migrate
+pnpm run db:seed
 ```
 
 *(Opcional)* Abre **Drizzle Studio** para explorar las tablas visualmente en el navegador:
@@ -147,12 +151,21 @@ LazUs implementa un ritual de vinculación íntimo y sin fricción técnica:
 
 ---
 
+## 6b. Catálogo de Actividades y Blind Reveal (Hito 3: `feature/activities`)
+
+- **Taxonomía de 3 Ejes:** Separación estricta de **Tema/Categoría** (10 categorías con color e ícono propios), **Tono** (`light`, `playful`, `tender`, `deep`) y **Ocasión** (`daily`, `special_date`, `long_distance`) en `activity_prompts`.
+- **Zona Horaria y Fechas Especiales:** Cálculo de `logical_date` según `couples.timezone` con prioridad para `anniversary_date` y fechas `MM-DD` (`02-14`, `12-25`, `01-01`).
+- **Formatos Interactivos:** `text_only`, `choice`, `scale`, `prediction` y `music` híbrido (buscador iTunes Search API con portada HD + preview 30s + enlace externo), dejando `photo_only`, `both` y `voice` listos en esquema para R2 (Hito 6).
+- **Invariante *Zero-Leak* e Inmutabilidad:** Mientras `status !== 'revealed'`, SQL omite físicamente el contenido/payload de la pareja; las respuestas quedan selladas (`409` ante re-envío) y se desbloquean atómicamente al llegar la segunda respuesta.
+
+---
+
 ## 7. Tests Automatizados y Calidad de Código
 
-El proyecto cuenta con una suite completa de pruebas unitarias, de integración, middleware y seguridad ejecutadas secuencialmente (`fileParallelism: false`) para garantizar aislamiento por `TRUNCATE`:
+El proyecto cuenta con una suite completa de pruebas unitarias, de integración, middleware y seguridad ejecutadas secuencialmente (`fileParallelism: false`) para garantizar aislamiento por `TRUNCATE` *(nota: `pnpm test` limpia las tablas de usuario/pareja en la BD local; para probar resiliencia offline con recarga de página usa `pnpm run build && pnpm run preview`)*:
 
 ```bash
-# Ejecutar la suite completa de tests (76 tests / 18 suites)
+# Ejecutar la suite completa de tests (81 tests / 19 suites)
 pnpm test
 
 # Comprobar linter sin errores
@@ -175,6 +188,7 @@ pnpm run build
 - **Middleware:**
   - `tests/middleware/auth.middleware.test.ts`: Tokens válidos/manipulados, sliding expiration y código 401.
 - **API & Integración:**
+  - `tests/api/activities.test.ts`: Concurrencia diaria, Zero-Leak en JSON, `403` antes de revelar, inmutabilidad (`409`), idempotencia, vigencia diaria, fechas especiales y buscador musical.
   - `tests/api/couple.pairing.test.ts`: Auto-discovery JIT, auto-claim de pulsera, reconocimiento propio, vinculación atómica, idempotencia, rechazo de autovinculación, conflictos concurrentes 409, invitaciones digitales `LZ-XXXX` y aislamiento de BD.
   - `tests/api/auth.email.test.ts`: Register, login, concurrencia (409 Conflict), logout y endpoint `GET /me`.
   - `tests/api/auth.takeover.test.ts`: Neutralización atómica de squatting y revocación de sesiones (Caso B).
