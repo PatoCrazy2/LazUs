@@ -5,7 +5,7 @@ describe('GET /api/health', () => {
   it('debe responder 200 con status healthy y conexión verificada a PostgreSQL', async () => {
     // Invocación en memoria del router Hono pasando las variables de entorno
     const res = await app.request('/api/health', {}, {
-      DATABASE_URL: process.env.DATABASE_URL || 'postgresql://postgres:postgrespassword@localhost:5432/lazus_db',
+      DATABASE_URL: process.env.DATABASE_URL || 'postgresql://postgres:postgrespassword@127.0.0.1:5432/lazus_db',
       ENVIRONMENT: 'test',
     })
 
