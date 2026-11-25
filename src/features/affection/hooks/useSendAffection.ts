@@ -4,6 +4,7 @@ import {
   affectionStore,
   type EnqueueAffectionResult,
 } from '../store/affection.store'
+import { triggerAffectionHaptics } from '../utils/haptics'
 
 export function useSendAffection() {
   const [isSending, setIsSending] = useState(false)
@@ -40,11 +41,7 @@ export function useSendAffection() {
     async (eventType: AffectionEventType = 'heart_tap'): Promise<EnqueueAffectionResult> => {
       setIsSending(true)
       try {
-        // Vibración háptica nativa inmediata si el dispositivo la soporta
-        if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-          navigator.vibrate([40, 60, 40])
-        }
-
+        triggerAffectionHaptics()
         const result = await affectionStore.sendOrQueueAffection(eventType)
         setLastSentAt(Date.now())
         return result

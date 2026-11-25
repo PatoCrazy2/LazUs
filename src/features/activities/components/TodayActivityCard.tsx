@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { CheckCircle2, Clock, Eye, Lock, Sparkles } from 'lucide-react'
+import { CheckCircle2, Clock, Eye, Heart, Lock, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { ACTIVITY_CATEGORY_META } from '../../../../shared'
 import { useCouple } from '../../couple/hooks/useCouple'
@@ -8,10 +8,21 @@ import { ActivityInputs } from './ActivityInputs'
 import { CategoryBadge } from './CategoryBadge'
 import { SubmissionPreview } from './SubmissionPreview'
 
-export function TodayActivityCard() {
+export interface TodayActivityCardProps {
+  autoReveal?: boolean
+  onSendQuickAffection?: () => void
+  isSendingAffection?: boolean
+}
+
+export function TodayActivityCard({
+  autoReveal = false,
+  onSendQuickAffection,
+  isSendingAffection = false,
+}: TodayActivityCardProps = {}) {
   const { partner } = useCouple()
   const { activity, isLoading, error, submitAnswer, isSubmitting, submitError } = useTodayActivity()
   const [hasTappedReveal, setHasTappedReveal] = useState(false)
+  const isRevealedOpen = hasTappedReveal || autoReveal
 
   if (isLoading) {
     return (
@@ -130,13 +141,25 @@ export function TodayActivityCard() {
             submission={activity.my_submission}
             accentColor={meta.color}
           />
+
+          {onSendQuickAffection && (
+            <button
+              type="button"
+              onClick={onSendQuickAffection}
+              disabled={isSendingAffection}
+              className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-rose-50/80 hover:bg-rose-100/80 border border-rose-200/80 text-xs font-medium text-rose-700 active:scale-[0.99] transition-all cursor-pointer disabled:opacity-60"
+            >
+              <Heart className="w-3.5 h-3.5 text-[#FF5C7A] fill-[#FF5C7A]" />
+              <span>Enviar toque de afecto a {partnerName}</span>
+            </button>
+          )}
         </motion.div>
       )}
 
       {/* ESTADO C: Ambos respondieron -> Botón "Tocar para revelar" o Vista Revelada */}
       {isStateC && (
         <AnimatePresence mode="wait">
-          {!hasTappedReveal ? (
+          {!isRevealedOpen ? (
             <motion.div
               key="reveal-gate"
               initial={{ opacity: 0, scale: 0.98 }}

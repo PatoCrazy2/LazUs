@@ -1,8 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { RouterProvider } from '@tanstack/react-router'
+import { RouterProvider, useNavigate } from '@tanstack/react-router'
 import { KeyRound, LogOut, Sparkles, User, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { ActivityHistoryList, TodayActivityCard } from './features/activities/components'
+import { FloatingHeartBurst, useSendAffection } from './features/affection'
 import { AmbientRibbons, UnverifiedEmailBanner } from './features/auth/components'
 import { useAuth } from './features/auth/hooks/useAuth'
 import { PairingSettingsModal } from './features/couple/components'
@@ -31,12 +32,41 @@ export function DashboardPage() {
   const { user, logout, isLoggingOut } = useAuth()
   const { partner } = useCouple()
   const { isPartnerOnline, affectionPulse, pairingCelebration } = useCoupleRealtime()
+  const { sendAffection, isSending: isSendingAffection } = useSendAffection()
+  const { tapIntent } = authenticatedRoute.useSearch()
+  const navigate = useNavigate()
+
   const [isPairingModalOpen, setIsPairingModalOpen] = useState(false)
+  const [sentBurstId, setSentBurstId] = useState<number | null>(null)
+  const [autoRevealLatched, setAutoRevealLatched] = useState(false)
+
+  useEffect(() => {
+    if (!tapIntent) return
+
+    const capturedIntent = tapIntent
+    void navigate({
+      to: '/',
+      search: {},
+      replace: true,
+    }).then(() => {
+      if (capturedIntent === 'affection_sent') {
+        setSentBurstId(Date.now())
+      } else if (capturedIntent === 'reveal') {
+        setAutoRevealLatched(true)
+      }
+    })
+  }, [tapIntent, navigate])
+
+  const handleQuickAffection = () => {
+    setSentBurstId(Date.now())
+    void sendAffection('heart_tap')
+  }
 
   return (
     <div className="relative min-h-[100dvh] w-full flex flex-col justify-between overflow-x-hidden bg-[#FFFFFF] text-[#18181B] pt-safe pb-safe">
       <AmbientRibbons />
       <AffectionHeartOverlay pulse={affectionPulse} partnerName={partner?.display_name} />
+      <FloatingHeartBurst burstId={sentBurstId} partnerName={partner?.display_name} />
       <CouplePairedCelebrationOverlay celebration={pairingCelebration} />
 
       {/* Top Banner if email is not yet verified */}
@@ -103,7 +133,11 @@ export function DashboardPage() {
         {/* Protagonista: Reto de Hoy + Historial debajo */}
         {partner ? (
           <div className="w-full space-y-6">
-            <TodayActivityCard />
+            <TodayActivityCard
+              autoReveal={autoRevealLatched || tapIntent === 'reveal'}
+              onSendQuickAffection={handleQuickAffection}
+              isSendingAffection={isSendingAffection}
+            />
             <ActivityHistoryList />
           </div>
         ) : (

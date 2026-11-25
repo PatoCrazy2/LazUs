@@ -47,6 +47,11 @@ export const SendAffectionInputSchema = z.object({
 
 export type SendAffectionInput = z.infer<typeof SendAffectionInputSchema>
 
+// Intención de navegación resuelta localmente desde /tap/:tagId
+export const TapIntentSchema = z.enum(['answer', 'affection_sent', 'reveal'])
+
+export type TapIntent = z.infer<typeof TapIntentSchema>
+
 import { ClaimTagInputSchema } from './couple.schema'
 
 // Contrato de resolución de NFC Tag (alias de ClaimTagInputSchema como fuente única)
