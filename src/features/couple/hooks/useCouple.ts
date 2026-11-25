@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { PairCoupleResponse } from '../../../../shared'
 import { db } from '../../../db'
-import { AUTH_QUERY_KEY } from '../../auth/hooks/useAuth'
+import { AUTH_QUERY_KEY, useAuth } from '../../auth/hooks/useAuth'
 import { coupleApi } from '../api/couple.api'
 import { coupleStore } from '../store/couple.store'
 
@@ -10,10 +10,13 @@ export const COUPLE_RESOLVE_QUERY_KEY = (identifier: string) => ['couple', 'reso
 
 export function useCouple() {
   const queryClient = useQueryClient()
+  const { isAuthenticated } = useAuth()
 
   // Consulta de la pareja actual (con caché y fallback a Dexie si falla la red)
   const currentCoupleQuery = useQuery({
     queryKey: COUPLE_CURRENT_QUERY_KEY,
+    enabled: isAuthenticated,
+    retry: false,
     queryFn: async () => {
       try {
         const data = await coupleApi.getCurrentCouple()
@@ -30,6 +33,12 @@ export function useCouple() {
         }
         return data
       } catch (err) {
+        const status = (err as { status?: number })?.status
+        if (status === 401) {
+          await coupleStore.clearCouple()
+          throw err
+        }
+
         // En caso de modo offline, intentar leer de Dexie
         const localCouple = await coupleStore.getCouple()
         if (localCouple) {
