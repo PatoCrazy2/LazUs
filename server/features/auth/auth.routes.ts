@@ -45,8 +45,7 @@ function setSessionCookie(c: any, token: string, expiresAt: Date) {
 }
 
 function getAuthService(c: any): AuthService {
-  const dbUrl = c.env?.DATABASE_URL || process.env.DATABASE_URL
-  const db = getDb(dbUrl)
+  const db = c.get('db') || getDb(c.env?.DATABASE_URL || process.env.DATABASE_URL)
   return new AuthService(db)
 }
 
