@@ -13,14 +13,20 @@ import {
 } from '../auth/auth.middleware'
 import { CoupleConflictError } from './couple.errors'
 import { CoupleService } from './couple.service'
+import { createRealtimePublisher, dispatchRealtimeTask } from '../realtime/realtime.publisher'
 
 function getCoupleService(c: any): CoupleService {
   const db = c.get('db') || getDb(c.env?.DATABASE_URL || process.env.DATABASE_URL)
-  return new CoupleService(db)
+  const publisher = createRealtimePublisher(c.env?.COUPLE_ROOM)
+  return new CoupleService(db, publisher, (task) => dispatchRealtimeTask(c, task))
 }
 
 export const coupleRouter = new Hono<{
-  Bindings: { DATABASE_URL?: string; ENVIRONMENT?: string }
+  Bindings: {
+    DATABASE_URL?: string
+    ENVIRONMENT?: string
+    COUPLE_ROOM?: DurableObjectNamespace
+  }
   Variables: AuthContextVariables & OptionalAuthContextVariables
 }>()
 
@@ -87,7 +93,7 @@ coupleRouter.post(
     const service = getCoupleService(c)
 
     try {
-      const response = await service.pairCouple(user.id, input)
+      const response = await service.pairCouple(user.id, input, user.displayName)
       return c.json(response, 200)
     } catch (error: any) {
       if (error instanceof CoupleConflictError) {

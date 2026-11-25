@@ -160,12 +160,21 @@ LazUs implementa un ritual de vinculación íntimo y sin fricción técnica:
 
 ---
 
+## 6c. Sincronización en Tiempo Real con Durable Objects (Hito 4: `feature/realtime`)
+
+- **WebSocket Hibernation API ($0/mes):** `CoupleDurableObject` (1 instancia por `couple_id`) usa `acceptWebSocket`, `serializeAttachment` y `setWebSocketAutoResponse('ping', 'pong')` para no consumir memoria ni CPU mientras los sockets hibernan.
+- **Zero-Leak en Tiempo Real:** Todos los eventos pasan por `SafeRealtimeEventSchema` (`.strict()`). Nunca viaja contenido de respuestas por WebSocket antes de `status === 'revealed'`; solo señales seguras (`partner_online`, `partner_offline`, `partner_submission_completed`, `activity_ready_to_reveal`, `affection_received`, `couple_paired`).
+- **Emparejamiento Instantáneo en Vivo:** Sala de espera hibernada `user:<userId>` (0 polling contra Neon) que entrega `couple_paired` al instante con autolimpieza (`close(1000)` + `storage.deleteAll()`), vibración háptica y transición determinista hacia `couple:<coupleId>`.
+- **Cliente Resiliente:** Reconexión automática con backoff exponencial + jitter, reconciliación en `online` / `visibilitychange`, indicador discreto *"En línea"* y animación háptica de corazón flotante.
+
+---
+
 ## 7. Tests Automatizados y Calidad de Código
 
 El proyecto cuenta con una suite completa de pruebas unitarias, de integración, middleware y seguridad ejecutadas secuencialmente (`fileParallelism: false`) para garantizar aislamiento por `TRUNCATE` *(nota: `pnpm test` limpia las tablas de usuario/pareja en la BD local; para probar resiliencia offline con recarga de página usa `pnpm run build && pnpm run preview`)*:
 
 ```bash
-# Ejecutar la suite completa de tests (81 tests / 19 suites)
+# Ejecutar la suite completa de tests (103 tests / 24 suites)
 pnpm test
 
 # Comprobar linter sin errores
@@ -189,6 +198,11 @@ pnpm run build
   - `tests/middleware/auth.middleware.test.ts`: Tokens válidos/manipulados, sliding expiration y código 401.
 - **API & Integración:**
   - `tests/api/activities.test.ts`: Concurrencia diaria, Zero-Leak en JSON, `403` antes de revelar, inmutabilidad (`409`), idempotencia, vigencia diaria, fechas especiales y buscador musical.
+  - `tests/api/realtime.durable-object.test.ts`: Hibernation API (`ping`/`pong`, `serializeAttachment`), presencia multi-pestaña, rechazo Zero-Leak y autolimpieza de sala de espera `user:<userId>`.
+  - `tests/api/realtime.routes.test.ts`: Autorización en `GET /api/realtime/ws`, enrutamiento dinámico `user:<id>` vs `couple:<id>` y anti-spoofing.
+  - `tests/api/realtime.activities-events.test.ts`: Emisión de `partner_submission_completed`, `activity_ready_to_reveal` y `affection_received` sin duplicados por idempotencia.
+  - `tests/api/realtime.couple-pairing.test.ts`: Emisión de `couple_paired` al vincular con pulsera NFC o código `LZ-XXXX`.
+  - `tests/frontend/realtime.client.test.ts`: Backoff exponencial, `visibilitychange`/`online`, invalidación TanStack Query y vibración háptica.
   - `tests/api/couple.pairing.test.ts`: Auto-discovery JIT, auto-claim de pulsera, reconocimiento propio, vinculación atómica, idempotencia, rechazo de autovinculación, conflictos concurrentes 409, invitaciones digitales `LZ-XXXX` y aislamiento de BD.
   - `tests/api/auth.email.test.ts`: Register, login, concurrencia (409 Conflict), logout y endpoint `GET /me`.
   - `tests/api/auth.takeover.test.ts`: Neutralización atómica de squatting y revocación de sesiones (Caso B).

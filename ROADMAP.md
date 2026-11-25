@@ -25,7 +25,7 @@
 [x] Hito 1: Autenticación Híbrida y Sesión (feature/auth)
 [x] Hito 2: Emparejamiento de Pareja y NFC Linking (feature/couple)
 [x] Hito 3: Catálogo de Actividades y Blind Reveal (feature/activities)
-[ ] Hito 4: Tiempo Real con Durable Objects (feature/realtime)
+[x] Hito 4: Tiempo Real con Durable Objects (feature/realtime)
 [ ] Hito 5: Rutas NFC y Toque de Afecto Háptico (feature/nfc)
 [ ] Hito 6: Almacenamiento en R2 y Collage Semanal (feature/media)
 [ ] Hito 7: Notificaciones Web Push (feature/notifications)
@@ -122,20 +122,22 @@
 
 ---
 
-### [ ] Hito 4: Sincronización en Tiempo Real con Durable Objects (`feature/realtime`)
+### [✅] Hito 4: Sincronización en Tiempo Real con Durable Objects (`feature/realtime`)
 
 **Objetivo:** Conectar a los dos integrantes mediante WebSockets a coste $0/mes para una reactividad instantánea.
 
-#### Criterios de Aceptación:
-- [ ] **Durable Object por Pareja:**
+#### ✅ Criterios de Aceptación (COMPLETADA):
+- [x] **Durable Object por Pareja:**
   - 1 instancia de `CoupleDurableObject` por cada `couple_id`.
-  - Implementación obligatoria de la **WebSocket Hibernation API** de Cloudflare para no consumir memoria mientras los sockets estén inactivos.
-- [ ] **Eventos Seguros en Tiempo Real:**
-  - Emisión de `partner_completed`: actualiza la pantalla del compañero al instante sin exponer el contenido.
+  - Implementación obligatoria de la **WebSocket Hibernation API** de Cloudflare para no consumir memoria mientras los sockets estén inactivos (`acceptWebSocket`, `serializeAttachment`, `setWebSocketAutoResponse('ping', 'pong')`, migración `new_sqlite_classes`).
+- [x] **Eventos Seguros en Tiempo Real:**
+  - Emisión de `partner_submission_completed`: actualiza la pantalla del compañero al instante sin exponer el contenido.
   - Emisión de `activity_ready_to_reveal`: desbloquea la animación de revelación en ambos móviles simultáneamente.
-  - Emisión de `affection_received`: dispara animación y vibración háptica.
-- [ ] **Reconexión Automática:**
-  - El cliente en React restablece la conexión al recuperar la señal o volver de segundo plano (`visibilitychange`).
+  - Emisión de `affection_received`: dispara animación de corazón flotante y vibración háptica (`[40, 60, 40]`).
+  - Emisión de `couple_paired` en sala de espera hibernada `user:<userId>` (con autolimpieza `close(1000)` + `deleteAll()`): actualiza al instante el teléfono del dueño de la pulsera/código con celebración háptica y transición determinista a la sala de pareja.
+  - Indicador discreto de presencia (*"En línea"*) con soporte multi-pestaña.
+- [x] **Reconexión Automática:**
+  - El cliente en React restablece la conexión con backoff exponencial + jitter al recuperar la señal (`online`) o volver de segundo plano (`visibilitychange`).
 
 ---
 

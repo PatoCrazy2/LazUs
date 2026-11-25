@@ -9,11 +9,19 @@ import type {
 } from '../../../shared'
 import { CoupleRepository } from './couple.repository'
 import { CoupleConflictError, IdempotencyConflictError } from './couple.errors'
+import {
+  getUserWaitingRoomKey,
+  type CoupleEventPublisher,
+} from '../realtime/realtime.publisher'
 
 export class CoupleService {
   private repo: CoupleRepository
 
-  constructor(db: DbClient) {
+  constructor(
+    db: DbClient,
+    private readonly realtimePublisher?: CoupleEventPublisher,
+    private readonly scheduleBackground?: (task: Promise<unknown>) => Promise<void> | void
+  ) {
     this.repo = new CoupleRepository(db)
   }
 
@@ -151,7 +159,11 @@ export class CoupleService {
     await this.repo.claimTagForUser(input.tag_identifier, userId)
   }
 
-  async pairCouple(userId: string, input: PairCoupleInput): Promise<PairCoupleResponse> {
+  async pairCouple(
+    userId: string,
+    input: PairCoupleInput,
+    acceptorDisplayName?: string
+  ): Promise<PairCoupleResponse> {
     const isDigitalCode = /^LZ-[A-Z0-9]{4,8}$/i.test(input.identifier)
     let inviterUserId: string
 
@@ -173,8 +185,9 @@ export class CoupleService {
       throw new Error('Cannot pair with yourself')
     }
 
+    let result: PairCoupleResponse
     try {
-      return await this.repo.executeAtomicPairing(
+      result = await this.repo.executeAtomicPairing(
         inviterUserId,
         userId,
         input.client_mutation_id,
@@ -182,10 +195,33 @@ export class CoupleService {
       )
     } catch (error) {
       if (error instanceof IdempotencyConflictError) {
+        // Reintento idempotente: no duplicar evento couple_paired
         return error.responseBody as PairCoupleResponse
       }
       throw error
     }
+
+    if (this.realtimePublisher) {
+      const publishTask = this.realtimePublisher.publish({
+        coupleId: result.couple_id,
+        roomKey: getUserWaitingRoomKey(inviterUserId),
+        audience: 'both',
+        event: {
+          type: 'couple_paired',
+          coupleId: result.couple_id,
+          partnerDisplayName: acceptorDisplayName?.trim() || 'Tu pareja',
+          timestamp: new Date().toISOString(),
+        },
+      })
+
+      if (this.scheduleBackground) {
+        await this.scheduleBackground(publishTask)
+      } else {
+        await publishTask.catch(() => undefined)
+      }
+    }
+
+    return result
   }
 
   async getCurrentCouple(userId: string): Promise<CurrentCoupleResponse> {
