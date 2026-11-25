@@ -1,5 +1,14 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { MutationType, OutboxStatus } from '../../shared'
+import type {
+  ActivityCategory,
+  ActivityOccasion,
+  ActivityResponseType,
+  ActivityTone,
+  MutationType,
+  OutboxStatus,
+  PromptConfig,
+  SubmissionPayload,
+} from '../../shared'
 
 // Modelos locales de Dexie (Velocidad, offline y UX instantánea)
 export interface LocalProfile {
@@ -21,15 +30,23 @@ export interface LocalCouple {
 }
 
 export interface LocalActivity {
-  id: string;
-  logicalDate: string;
-  prompt: string;
-  status: 'pending' | 'revealed';
-  mySubmissionCompleted: boolean;
-  partnerSubmissionCompleted: boolean;
-  myContent?: string;
-  partnerContent?: string; // Solo presente si status === 'revealed'
-  revealedAt?: string;
+  id: string
+  logicalDate: string
+  prompt: string
+  category?: ActivityCategory
+  tone?: ActivityTone
+  occasion?: ActivityOccasion
+  responseType?: ActivityResponseType
+  promptConfig?: PromptConfig
+  status: 'pending' | 'revealed'
+  mySubmissionCompleted: boolean
+  partnerSubmissionCompleted: boolean
+  myContent?: string
+  myPayload?: SubmissionPayload | null
+  partnerContent?: string // Solo presente si status === 'revealed'
+  partnerPayload?: SubmissionPayload | null // Solo presente si status === 'revealed'
+  revealedAt?: string
+  syncStatus?: 'synced' | 'pending_sync'
 }
 
 export interface LocalOutboxItem {
