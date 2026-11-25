@@ -134,6 +134,7 @@
   - Emisión de `partner_submission_completed`: actualiza la pantalla del compañero al instante sin exponer el contenido.
   - Emisión de `activity_ready_to_reveal`: desbloquea la animación de revelación en ambos móviles simultáneamente.
   - Emisión de `affection_received`: dispara animación de corazón flotante y vibración háptica (`[40, 60, 40]`).
+  - Emisión de `couple_paired` en sala de espera hibernada `user:<userId>` (con autolimpieza `close(1000)` + `deleteAll()`): actualiza al instante el teléfono del dueño de la pulsera/código con celebración háptica y transición determinista a la sala de pareja.
   - Indicador discreto de presencia (*"En línea"*) con soporte multi-pestaña.
 - [x] **Reconexión Automática:**
   - El cliente en React restablece la conexión con backoff exponencial + jitter al recuperar la señal (`online`) o volver de segundo plano (`visibilitychange`).

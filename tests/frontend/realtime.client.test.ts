@@ -8,6 +8,7 @@ import {
 import {
   AFFECTION_VIBRATION_PATTERN,
   handleRealtimeDomainEvent,
+  PAIRING_VIBRATION_PATTERN,
 } from '../../src/features/realtime/realtime.context'
 
 class FakeBrowserWebSocket implements WebSocketLike {
@@ -257,5 +258,38 @@ describe('CoupleRealtimeClient & Domain Event Handlers - Fase 3', () => {
     )
     expect(vibrate).toHaveBeenCalledWith(AFFECTION_VIBRATION_PATTERN)
     expect(triggerAffection).toHaveBeenCalledWith('heart_tap')
+  })
+
+  it('5. handleRealtimeDomainEvent reacciona a couple_paired invalidando pareja/actividad y disparando celebración háptica', () => {
+    const invalidateTodayActivity = vi.fn()
+    const invalidateCoupleState = vi.fn()
+    const triggerPairingCelebration = vi.fn()
+    const vibrate = vi.fn()
+
+    const coupleId = '11111111-1111-4111-8111-111111111111'
+    const ts = '2026-11-25T19:05:00.000Z'
+
+    handleRealtimeDomainEvent(
+      {
+        type: 'couple_paired',
+        coupleId,
+        partnerDisplayName: 'Emilio',
+        timestamp: ts,
+      },
+      {
+        setPartnerOnline: vi.fn(),
+        invalidateTodayActivity,
+        invalidateActivityHistory: vi.fn(),
+        invalidateCoupleState,
+        triggerAffection: vi.fn(),
+        triggerPairingCelebration,
+        vibrate,
+      }
+    )
+
+    expect(vibrate).toHaveBeenCalledWith(PAIRING_VIBRATION_PATTERN)
+    expect(invalidateCoupleState).toHaveBeenCalledTimes(1)
+    expect(invalidateTodayActivity).toHaveBeenCalledTimes(1)
+    expect(triggerPairingCelebration).toHaveBeenCalledWith(coupleId, 'Emilio')
   })
 })

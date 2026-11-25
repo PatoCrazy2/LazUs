@@ -7,16 +7,24 @@ export interface AffectionPulse {
   eventType: string
 }
 
+export interface PairingCelebration {
+  id: number
+  coupleId: string
+  partnerDisplayName: string
+}
+
 export interface CoupleRealtimeContextValue {
   connectionStatus: RealtimeConnectionStatus
   isPartnerOnline: boolean
   affectionPulse: AffectionPulse | null
+  pairingCelebration: PairingCelebration | null
 }
 
 export const DEFAULT_REALTIME_CONTEXT: CoupleRealtimeContextValue = {
   connectionStatus: 'disconnected',
   isPartnerOnline: false,
   affectionPulse: null,
+  pairingCelebration: null,
 }
 
 export const CoupleRealtimeContext = createContext<CoupleRealtimeContextValue>(
@@ -27,11 +35,24 @@ export interface RealtimeDomainHandlers {
   setPartnerOnline: (online: boolean) => void
   invalidateTodayActivity: () => void
   invalidateActivityHistory: () => void
+  invalidateCoupleState?: () => void
   triggerAffection: (eventType: string) => void
+  triggerPairingCelebration?: (coupleId: string, partnerDisplayName: string) => void
   vibrate?: (pattern: number[]) => void
 }
 
 export const AFFECTION_VIBRATION_PATTERN = [40, 60, 40]
+export const PAIRING_VIBRATION_PATTERN = [60, 50, 100]
+
+function triggerHaptics(pattern: number[], customVibrate?: (pattern: number[]) => void): void {
+  if (customVibrate) {
+    customVibrate(pattern)
+    return
+  }
+  if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+    navigator.vibrate(pattern)
+  }
+}
 
 export function handleRealtimeDomainEvent(
   event: SafeRealtimeEvent,
@@ -52,12 +73,14 @@ export function handleRealtimeDomainEvent(
       handlers.invalidateActivityHistory()
       return
     case 'affection_received':
-      if (handlers.vibrate) {
-        handlers.vibrate(AFFECTION_VIBRATION_PATTERN)
-      } else if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-        navigator.vibrate(AFFECTION_VIBRATION_PATTERN)
-      }
+      triggerHaptics(AFFECTION_VIBRATION_PATTERN, handlers.vibrate)
       handlers.triggerAffection(event.eventType)
+      return
+    case 'couple_paired':
+      triggerHaptics(PAIRING_VIBRATION_PATTERN, handlers.vibrate)
+      handlers.invalidateCoupleState?.()
+      handlers.invalidateTodayActivity()
+      handlers.triggerPairingCelebration?.(event.coupleId, event.partnerDisplayName)
       return
   }
 }
