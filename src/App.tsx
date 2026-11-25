@@ -7,6 +7,10 @@ import { AmbientRibbons, UnverifiedEmailBanner } from './features/auth/component
 import { useAuth } from './features/auth/hooks/useAuth'
 import { PairingSettingsModal } from './features/couple/components'
 import { useCouple } from './features/couple/hooks/useCouple'
+import { AffectionHeartOverlay } from './features/realtime/components/AffectionHeartOverlay'
+import { PartnerPresenceBadge } from './features/realtime/components/PartnerPresenceBadge'
+import { useCoupleRealtime } from './features/realtime/hooks/useCoupleRealtime'
+import { RealtimeProvider } from './features/realtime/RealtimeProvider'
 import { authenticatedRoute, router } from './router'
 
 const queryClient = new QueryClient({
@@ -25,11 +29,13 @@ const queryClient = new QueryClient({
 export function DashboardPage() {
   const { user, logout, isLoggingOut } = useAuth()
   const { partner } = useCouple()
+  const { isPartnerOnline, affectionPulse } = useCoupleRealtime()
   const [isPairingModalOpen, setIsPairingModalOpen] = useState(false)
 
   return (
     <div className="relative min-h-[100dvh] w-full flex flex-col justify-between overflow-x-hidden bg-[#FFFFFF] text-[#18181B] pt-safe pb-safe">
       <AmbientRibbons />
+      <AffectionHeartOverlay pulse={affectionPulse} partnerName={partner?.display_name} />
 
       {/* Top Banner if email is not yet verified */}
       <UnverifiedEmailBanner />
@@ -78,6 +84,7 @@ export function DashboardPage() {
               <span>
                 Con <strong className="text-[#18181B] font-medium">{partner.display_name}</strong>
               </span>
+              <PartnerPresenceBadge isOnline={isPartnerOnline} />
             </div>
           ) : (
             <button
@@ -160,7 +167,9 @@ export default function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AppRouter />
+      <RealtimeProvider>
+        <AppRouter />
+      </RealtimeProvider>
     </QueryClientProvider>
   )
 }
