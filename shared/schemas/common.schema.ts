@@ -26,12 +26,15 @@ export const OutboxStatusSchema = z.enum([
 
 export type OutboxStatus = z.infer<typeof OutboxStatusSchema>
 
+import { SubmissionPayloadSchema } from './activities.schema'
+
 // Contrato de mutación de respuesta diaria (Blind Reveal)
 export const SubmitActivityInputSchema = z.object({
   client_mutation_id: z.string().uuid(),
   activity_id: z.string().uuid(),
   content: z.string().min(1).max(2000).optional(),
   media_key: z.string().max(512).optional(),
+  payload: SubmissionPayloadSchema.optional(),
 })
 
 export type SubmitActivityInput = z.infer<typeof SubmitActivityInputSchema>
