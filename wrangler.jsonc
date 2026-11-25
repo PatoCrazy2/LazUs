@@ -11,6 +11,22 @@
     "binding": "ASSETS",
     "not_found_handling": "single-page-application"
   },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "COUPLE_ROOM",
+        "class_name": "CoupleDurableObject"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "CoupleDurableObject"
+      ]
+    }
+  ],
   "vars": {
     "ENVIRONMENT": "development"
   }

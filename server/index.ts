@@ -7,11 +7,15 @@ import { activitiesRouter } from './features/activities/activities.routes'
 import { affectionRouter } from './features/affection/affection.routes'
 import { authRouter } from './features/auth/auth.routes'
 import { coupleRouter } from './features/couple/couple.routes'
+import { realtimeRouter } from './features/realtime/realtime.routes'
 import { AuthService } from './features/auth/auth.service'
+
+export { CoupleDurableObject } from './features/realtime/couple.durable-object'
 
 export type Bindings = {
   ENVIRONMENT?: string
   ASSETS?: Fetcher
+  COUPLE_ROOM?: DurableObjectNamespace
   HYPERDRIVE?: { connectionString: string }
   DATABASE_URL?: string
   AUTH_SECRET?: string
@@ -114,6 +118,7 @@ app.route('/api/auth', authRouter)
 app.route('/api/couple', coupleRouter)
 app.route('/api/activities', activitiesRouter)
 app.route('/api/affection', affectionRouter)
+app.route('/api/realtime', realtimeRouter)
 
 // Handler de Cloudflare Cron Trigger (§2.6) para limpieza de datos caducados
 export const scheduledHandler = async (_event: any, env: Bindings, _ctx?: any) => {
