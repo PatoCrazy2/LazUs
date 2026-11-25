@@ -5,7 +5,7 @@ export function getTestEnv() {
   return {
     DATABASE_URL:
       process.env.DATABASE_URL ||
-      'postgresql://postgres:postgrespassword@localhost:5432/lazus_db',
+      'postgresql://postgres:postgrespassword@127.0.0.1:5432/lazus_db',
     ENVIRONMENT: 'test',
     AUTH_SECRET: 'test_super_secret_auth_signing_key_min_32_bytes!',
     GOOGLE_CLIENT_ID: 'test-google-client-id',

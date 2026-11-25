@@ -15,6 +15,7 @@ import {
   VerifyEmailCard,
 } from './features/auth/components'
 import type { AuthContextValue } from './features/auth/hooks/useAuth'
+import { LinkResolverPage } from './features/couple/components/LinkResolverPage'
 
 export interface RouterContext {
   auth: AuthContextValue
@@ -35,10 +36,19 @@ const rootRoute = createRootRouteWithContext<RouterContext>()({
 const guestLayoutRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'guest',
-  beforeLoad: ({ context }) => {
+  validateSearch: (search: Record<string, unknown>): { redirect?: string } => {
+    return {
+      redirect: typeof search.redirect === 'string' ? search.redirect : undefined,
+    }
+  },
+  beforeLoad: ({ context, search }) => {
     // Invariant 1.1: Do not prematurely redirect during initial hydration
     if (!context.auth.hasResolvedInitialAuth) return
     if (context.auth.isAuthenticated) {
+      const destination = (search as { redirect?: string })?.redirect
+      if (destination && destination.startsWith('/')) {
+        throw redirect({ href: destination })
+      }
       throw redirect({ to: '/' })
     }
   },
@@ -95,7 +105,14 @@ const verifyEmailRoute = createRoute({
   },
 })
 
-// 4. Authenticated Route: Guarded couple space
+// 4. Dual-Access NFC / Deep Link Route (/link/:identifier)
+const linkRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/link/$identifier',
+  component: LinkResolverPage,
+})
+
+// 5. Authenticated Route: Guarded couple space
 export const authenticatedRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
@@ -117,6 +134,7 @@ const routeTree = rootRoute.addChildren([
     resetPasswordRoute,
   ]),
   verifyEmailRoute,
+  linkRoute,
   authenticatedRoute,
 ])
 

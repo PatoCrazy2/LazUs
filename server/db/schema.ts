@@ -23,6 +23,34 @@ export const invitationStatusEnum = pgEnum('invitation_status', [
   'revoked',
   'expired',
 ])
+export const activityCategoryEnum = pgEnum('activity_category', [
+  'getting_to_know',
+  'memories',
+  'future',
+  'gratitude',
+  'life_values',
+  'music',
+  'romance',
+  'play',
+  'together_irl',
+  'daily_checkin',
+])
+export const activityToneEnum = pgEnum('activity_tone', ['light', 'playful', 'tender', 'deep'])
+export const activityOccasionEnum = pgEnum('activity_occasion', [
+  'daily',
+  'special_date',
+  'long_distance',
+])
+export const activityResponseTypeEnum = pgEnum('activity_response_type', [
+  'text_only',
+  'choice',
+  'scale',
+  'prediction',
+  'music',
+  'photo_only',
+  'both',
+  'voice',
+])
 
 // 1. Usuarios
 export const users = pgTable('users', {
@@ -41,6 +69,8 @@ export const users = pgTable('users', {
 export const couples = pgTable('couples', {
   id: uuid('id').defaultRandom().primaryKey(),
   status: coupleStatusEnum('status').default('pending').notNull(),
+  timezone: varchar('timezone', { length: 64 }).default('America/Mexico_City').notNull(),
+  maxRomanceIntensity: integer('max_romance_intensity').default(2).notNull(),
   anniversaryDate: timestamp('anniversary_date', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
@@ -107,6 +137,29 @@ export const coupleInvitations = pgTable(
   ]
 )
 
+// 4c. Catálogo Curado de Actividades (3 Ejes: Tema, Tono, Ocasión)
+export const activityPrompts = pgTable(
+  'activity_prompts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    slug: varchar('slug', { length: 100 }).unique().notNull(),
+    prompt: text('prompt').notNull(),
+    category: activityCategoryEnum('category').notNull(),
+    tone: activityToneEnum('tone').default('light').notNull(),
+    occasion: activityOccasionEnum('occasion').default('daily').notNull(),
+    intensity: integer('intensity').default(1).notNull(), // 1=suave, 2=medio, 3=intenso
+    responseType: activityResponseTypeEnum('response_type').default('text_only').notNull(),
+    promptConfig: jsonb('prompt_config'),
+    specialDate: varchar('special_date', { length: 16 }), // Ej: '02-14', '12-25', 'anniversary'
+    isActive: boolean('is_active').default(true).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('idx_activity_prompts_special_date').on(t.specialDate),
+    index('idx_activity_prompts_category').on(t.category),
+  ]
+)
+
 // 5. Actividades Diarias
 export const dailyActivities = pgTable(
   'daily_activities',
@@ -115,8 +168,14 @@ export const dailyActivities = pgTable(
     coupleId: uuid('couple_id')
       .references(() => couples.id, { onDelete: 'cascade' })
       .notNull(),
+    promptId: uuid('prompt_id').references(() => activityPrompts.id, { onDelete: 'set null' }),
     logicalDate: varchar('logical_date', { length: 10 }).notNull(), // Formato: YYYY-MM-DD
     prompt: text('prompt').notNull(),
+    category: activityCategoryEnum('category').default('getting_to_know').notNull(),
+    tone: activityToneEnum('tone').default('light').notNull(),
+    occasion: activityOccasionEnum('occasion').default('daily').notNull(),
+    responseType: activityResponseTypeEnum('response_type').default('text_only').notNull(),
+    promptConfig: jsonb('prompt_config'),
     status: activityStatusEnum('status').default('pending').notNull(),
     revealedAt: timestamp('revealed_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -140,6 +199,7 @@ export const submissions = pgTable(
       .notNull(),
     content: text('content'),
     mediaKey: varchar('media_key', { length: 512 }),
+    payload: jsonb('payload'),
     completedAt: timestamp('completed_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [

@@ -15,8 +15,7 @@ import { CoupleConflictError } from './couple.errors'
 import { CoupleService } from './couple.service'
 
 function getCoupleService(c: any): CoupleService {
-  const dbUrl = c.env?.DATABASE_URL || process.env.DATABASE_URL
-  const db = getDb(dbUrl)
+  const db = c.get('db') || getDb(c.env?.DATABASE_URL || process.env.DATABASE_URL)
   return new CoupleService(db)
 }
 

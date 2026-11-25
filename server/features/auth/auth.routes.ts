@@ -45,8 +45,7 @@ function setSessionCookie(c: any, token: string, expiresAt: Date) {
 }
 
 function getAuthService(c: any): AuthService {
-  const dbUrl = c.env?.DATABASE_URL || process.env.DATABASE_URL
-  const db = getDb(dbUrl)
+  const db = c.get('db') || getDb(c.env?.DATABASE_URL || process.env.DATABASE_URL)
   return new AuthService(db)
 }
 
@@ -199,9 +198,10 @@ authRouter.get('/google', async (c) => {
   const service = getAuthService(c)
   const env = getAuthEnv(c)
   const redirectUri = new URL('/api/auth/google/callback', c.req.url).toString()
+  const returnTo = c.req.query('redirect')
 
   try {
-    const { authUrl } = await service.getGoogleAuthUrl(env, redirectUri)
+    const { authUrl } = await service.getGoogleAuthUrl(env, redirectUri, returnTo)
     return c.redirect(authUrl)
   } catch (error: any) {
     const status = error.status || 500
@@ -226,8 +226,11 @@ authRouter.get('/google/callback', async (c) => {
     const result = await service.handleGoogleCallback(code, state, redirectUri, env)
     setSessionCookie(c, result.sessionToken, result.sessionExpiresAt)
 
-    // Redirección a la aplicación cliente
-    const appUrl = env.APP_BASE_URL || '/'
+    // Redirección a la aplicación cliente (respetando returnTo si existe)
+    let appUrl = env.APP_BASE_URL || '/'
+    if (result.returnTo && result.returnTo.startsWith('/')) {
+      appUrl = env.APP_BASE_URL ? `${env.APP_BASE_URL.replace(/\/$/, '')}${result.returnTo}` : result.returnTo
+    }
     return c.redirect(appUrl)
   } catch (error: any) {
     const status = error.status || 400

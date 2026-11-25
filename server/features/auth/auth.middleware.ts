@@ -28,8 +28,7 @@ export async function authMiddleware(c: Context, next: Next) {
     return c.json({ error: 'No autenticado' }, 401)
   }
 
-  const dbUrl = c.env?.DATABASE_URL || process.env.DATABASE_URL
-  const db = getDb(dbUrl)
+  const db = c.get('db') || getDb(c.env?.DATABASE_URL || process.env.DATABASE_URL)
   const repo = new AuthRepository(db)
 
   const sessionTokenHash = await sha256Hash(rawSessionToken)
@@ -93,8 +92,7 @@ export async function optionalAuthMiddleware(c: Context, next: Next) {
   }
 
   try {
-    const dbUrl = c.env?.DATABASE_URL || process.env.DATABASE_URL
-    const db = getDb(dbUrl)
+    const db = c.get('db') || getDb(c.env?.DATABASE_URL || process.env.DATABASE_URL)
     const repo = new AuthRepository(db)
 
     const sessionTokenHash = await sha256Hash(rawSessionToken)
