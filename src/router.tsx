@@ -5,6 +5,7 @@ import {
   Outlet,
   redirect,
 } from '@tanstack/react-router'
+import { type TapIntent, TapIntentSchema } from '../shared'
 import {
   AuthLayout,
   AuthSplash,
@@ -16,6 +17,7 @@ import {
 } from './features/auth/components'
 import type { AuthContextValue } from './features/auth/hooks/useAuth'
 import { LinkResolverPage } from './features/couple/components/LinkResolverPage'
+import { TapResolverPage } from './features/nfc'
 
 export interface RouterContext {
   auth: AuthContextValue
@@ -112,10 +114,32 @@ const linkRoute = createRoute({
   component: LinkResolverPage,
 })
 
-// 5. Authenticated Route: Guarded couple space
+// 5. Instant NFC Bracelet Deep Link Route (/tap/:tagId) - Zero Web NFC API dependency
+export const tapRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/tap/$tagId',
+  beforeLoad: ({ context, params }) => {
+    if (!context.auth.hasResolvedInitialAuth) return
+    if (!context.auth.isAuthenticated) {
+      throw redirect({
+        to: '/login',
+        search: { redirect: `/tap/${params.tagId}` },
+      })
+    }
+  },
+  component: TapResolverPage,
+})
+
+// 6. Authenticated Route: Guarded couple space
 export const authenticatedRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
+  validateSearch: (search: Record<string, unknown>): { tapIntent?: TapIntent } => {
+    const parsed = TapIntentSchema.safeParse(search.tapIntent)
+    return {
+      tapIntent: parsed.success ? parsed.data : undefined,
+    }
+  },
   beforeLoad: ({ context }) => {
     // Invariant 1.1: Do not eject user while checking Dexie / session
     if (!context.auth.hasResolvedInitialAuth) return
@@ -135,6 +159,7 @@ const routeTree = rootRoute.addChildren([
   ]),
   verifyEmailRoute,
   linkRoute,
+  tapRoute,
   authenticatedRoute,
 ])
 
