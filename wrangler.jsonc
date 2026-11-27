@@ -29,6 +29,7 @@
   ],
   "vars": {
     "ENVIRONMENT": "development",
-    "R2_BUCKET_NAME": "lazus-media"
+    "R2_BUCKET_NAME": "lazus-media",
+    "VAPID_SUBJECT": "mailto:hola@lazus.app"
   }
 }

@@ -10,6 +10,7 @@ import { coupleRouter } from './features/couple/couple.routes'
 import { mediaRouter } from './features/media/media.routes'
 import { MediaService } from './features/media/media.service'
 import { createMediaSigner } from './features/media/r2.signer'
+import { notificationsRouter } from './features/notifications/notifications.routes'
 import { realtimeRouter } from './features/realtime/realtime.routes'
 import { AuthService } from './features/auth/auth.service'
 
@@ -31,6 +32,9 @@ export type Bindings = {
   R2_BUCKET_NAME?: string
   R2_ACCESS_KEY_ID?: string
   R2_SECRET_ACCESS_KEY?: string
+  VAPID_PUBLIC_KEY?: string
+  VAPID_PRIVATE_KEY?: string
+  VAPID_SUBJECT?: string
 }
 
 type AppVariables = {
@@ -127,6 +131,7 @@ app.route('/api/activities', activitiesRouter)
 app.route('/api/affection', affectionRouter)
 app.route('/api/realtime', realtimeRouter)
 app.route('/api/media', mediaRouter)
+app.route('/api/notifications', notificationsRouter)
 
 // Handler de Cloudflare Cron Trigger (§2.6) para limpieza de datos caducados y collages semanales
 export const scheduledHandler = async (_event: any, env: Bindings, _ctx?: any) => {

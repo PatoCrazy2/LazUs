@@ -10,6 +10,7 @@ import type {
 import type { DbClient } from '../../db'
 import type { dailyActivities } from '../../db/schema'
 import { INITIAL_PROMPTS } from '../../db/seeds/prompts'
+import type { ActivityPushNotifier } from '../notifications/notifications.service'
 import type { CoupleEventPublisher } from '../realtime/realtime.publisher'
 import {
   ActivityForbiddenError,
@@ -52,7 +53,8 @@ export class ActivitiesService {
     private readonly nowProvider: () => Date = () => new Date(),
     private readonly fetchImpl: typeof fetch = fetch,
     private readonly realtimePublisher?: CoupleEventPublisher,
-    private readonly scheduleBackground?: (task: Promise<unknown>) => Promise<void> | void
+    private readonly scheduleBackground?: (task: Promise<unknown>) => Promise<void> | void,
+    private readonly pushNotifier?: ActivityPushNotifier
   ) {
     this.repo = new ActivitiesRepository(db)
   }
@@ -160,6 +162,19 @@ export class ActivitiesService {
         await this.scheduleBackground(publishTask)
       } else {
         await publishTask.catch(() => undefined)
+      }
+    }
+
+    if (this.pushNotifier) {
+      const pushTask = this.pushNotifier.notifyPartnerActivityUpdate(
+        coupleCtx.coupleId,
+        userId,
+        result.activity_status
+      )
+      if (this.scheduleBackground) {
+        await this.scheduleBackground(pushTask)
+      } else {
+        await pushTask.catch(() => undefined)
       }
     }
 
