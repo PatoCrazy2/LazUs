@@ -63,7 +63,13 @@ Copia la plantilla de desarrollo:
 ```bash
 cp .env.example .env.local
 ```
-*(Para Cloudflare Workers en local, las variables ya se encuentran configuradas en `.dev.vars` con `127.0.0.1:5432`)*.
+*(Para Cloudflare Workers en local, las variables se configuran en `.dev.vars` con `127.0.0.1:5432`)*.
+
+Para habilitar **Notificaciones Web Push** en local o producción, genera un par de claves VAPID P-256 sin coste:
+```bash
+pnpm run vapid:generate
+```
+Añade `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y `VAPID_SUBJECT` en `.dev.vars` (en local) o mediante `wrangler secret put VAPID_PRIVATE_KEY` en Cloudflare Workers.
 
 > [!TIP]
 > **Resiliencia en Windows / Docker:** Se utiliza la dirección IPv4 directa `127.0.0.1` en lugar de `localhost` en la cadena de conexión (`postgresql://postgres:postgrespassword@127.0.0.1:5432/lazus_db`). Esto evita que el stack de red de Windows intente resolver primero por IPv6 (`::1`), previniendo el congelamiento de 21 segundos por timeout TCP.
@@ -169,12 +175,21 @@ LazUs implementa un ritual de vinculación íntimo y sin fricción técnica:
 
 ---
 
+## 6d. Notificaciones Web Push (Hito 7: `feature/notifications`)
+
+- **Motor Web Crypto Puro (\$0/mes):** Implementación propia en Cloudflare Workers sin dependencias Node incompatibles: firma VAPID JWT (`ES256` / RFC 8292) y cifrado `aes128gcm` (RFC 8291 / RFC 8188) con ECDH P-256 efímero, HKDF-SHA-256 y AES-128-GCM.
+- **Service Worker Tipado (`src/sw.ts`):** Compilado con VitePWA `injectManifest`, precaching Workbox, agrupación por `tag` (`renotify: true`) y supresión automática del banner del sistema cuando la app ya está enfocada en primer plano.
+- **Guardia iOS Standalone & *Contextual Soft-Ask*:** Detección obligatoria de `display-mode: standalone` / `navigator.standalone` en iOS/iPadOS antes de solicitar permisos, con guía visual de 2 pasos para Safari móvil y botón de aviso de prueba (3s) en Ajustes.
+- **Zero-Leak & Auto-Purga `410 Gone`:** Payloads validados con `SafePushPayloadSchema.strict()` (nunca viajan respuestas ni claves R2) y limpieza automática en PostgreSQL (`push_subscriptions`) cuando APNs/FCM responde `404`/`410`.
+
+---
+
 ## 7. Tests Automatizados y Calidad de Código
 
 El proyecto cuenta con una suite completa de pruebas unitarias, de integración, middleware y seguridad ejecutadas secuencialmente (`fileParallelism: false`) para garantizar aislamiento por `TRUNCATE` *(nota: `pnpm test` limpia las tablas de usuario/pareja en la BD local; para probar resiliencia offline con recarga de página usa `pnpm run build && pnpm run preview`)*:
 
 ```bash
-# Ejecutar la suite completa de tests (103 tests / 24 suites)
+# Ejecutar la suite completa de tests (173 tests / 37 suites)
 pnpm test
 
 # Comprobar linter sin errores
@@ -193,10 +208,14 @@ pnpm run build
   - `tests/unit/auth.schema.test.ts`: Zod estricto, sanitización de emails y reglas de contraseñas.
   - `tests/unit/auth.store.test.ts`: Sincronización offline en IndexedDB con `fake-indexeddb`.
   - `tests/unit/auth.ui.test.ts`: Aislamiento ante `staleTime` y refetch en segundo plano, timeout de seguridad de 4s, esquemas Zod en UI y cuenta regresiva 429.
+  - `tests/unit/webpush.crypto.test.ts`: Generación VAPID P-256, JWT ES256 (RFC 8292), cifrado/descifrado `aes128gcm` (RFC 8291) y contrato Zero-Leak.
+  - `tests/unit/notifications.support.test.ts`: Detección iOS Safari vs Standalone, supresión en primer plano y rutas seguras en Service Worker.
   - `tests/unit/schemas.test.ts`: Validación de contratos de dominio y outbox.
 - **Middleware:**
   - `tests/middleware/auth.middleware.test.ts`: Tokens válidos/manipulados, sliding expiration y código 401.
 - **API & Integración:**
+  - `tests/api/notifications.push.test.ts`: Suscripciones multi-dispositivo, `POST /test`, auto-purga `410 Gone`, disparadores Zero-Leak e idempotencia.
+  - `tests/frontend/notifications.ui.test.tsx`: Guía iOS 2 pasos, *Contextual Soft-Ask* y modal de Ajustes Push.
   - `tests/api/activities.test.ts`: Concurrencia diaria, Zero-Leak en JSON, `403` antes de revelar, inmutabilidad (`409`), idempotencia, vigencia diaria, fechas especiales y buscador musical.
   - `tests/api/realtime.durable-object.test.ts`: Hibernation API (`ping`/`pong`, `serializeAttachment`), presencia multi-pestaña, rechazo Zero-Leak y autolimpieza de sala de espera `user:<userId>`.
   - `tests/api/realtime.routes.test.ts`: Autorización en `GET /api/realtime/ws`, enrutamiento dinámico `user:<id>` vs `couple:<id>` y anti-spoofing.
@@ -239,15 +258,18 @@ LazUs/
 │       ├── auth/               # crypto, email, repository, service, middleware, routes
 │       ├── couple/             # repository (FOR UPDATE), service (JIT resolve), errors, routes
 │       ├── activities/         # submission y reglas de Blind Reveal
-│       └── affection/          # eventos de afecto y toques NFC
+│       ├── affection/          # eventos de afecto y toques NFC
+│       └── notifications/      # motor Web Crypto VAPID/RFC8291, endpoints y disparadores
 │
 ├── src/                        # Frontend PWA (React + Vite)
+│   ├── sw.ts                   # Service Worker tipado (Workbox injectManifest + Web Push)
 │   ├── db/                     # Dexie.js local y motor Outbox con Dead-Letter Queue
 │   ├── features/               # Slices modulares de frontend
 │   │   ├── auth/               # api, store offline en Dexie, hook useAuth y componentes UI
 │   │   ├── couple/             # vinculación, ritual de unión y estado de pulseras
 │   │   ├── activities/         # hooks de envío y visualización
-│   │   └── affection/          # hooks de toques hápticos y afecto
+│   │   ├── affection/          # hooks de toques hápticos y afecto
+│   │   └── notifications/      # guardia iOS standalone, Soft-Ask y ajustes Push
 │   ├── router.tsx              # Árbol de rutas tipadas (TanStack Router) con guards guest/auth
 │   ├── App.tsx                 # Shell móvil PWA y TanStack Query Provider
 │   └── index.css               # Estilos globales y keyframes de animaciones
