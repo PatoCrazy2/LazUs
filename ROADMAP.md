@@ -28,7 +28,7 @@
 [x] Hito 4: Tiempo Real con Durable Objects (feature/realtime)
 [x] Hito 5: Rutas NFC y Toque de Afecto Háptico (feature/nfc)
 [x] Hito 6: Almacenamiento en R2 y Collage Semanal (feature/media)
-[ ] Hito 7: Notificaciones Web Push (feature/notifications)
+[x] Hito 7: Notificaciones Web Push (feature/notifications)
 ```
 
 ---
@@ -178,16 +178,18 @@
 
 ---
 
-### [ ] Hito 7: Notificaciones Web Push (`feature/notifications`)
+### [✅] Hito 7: Notificaciones Web Push (`feature/notifications`)
 
 **Objetivo:** Mantener a la pareja comunicada cuando la PWA está cerrada o en segundo plano.
 
-#### Criterios de Aceptación:
-- [ ] **Suscripción VAPID:**
-  - Generación de claves VAPID y registro del Service Worker en el cliente.
-  - Almacenamiento de endpoints de suscripción por dispositivo en PostgreSQL.
-- [ ] **Detección de Standalone en iOS:**
-  - Detección de instalación previa en la pantalla de inicio antes de solicitar permisos push en Safari móvil.
-- [ ] **Disparadores de Push:**
-  - Notificación inmediata al recibir un toque de afecto (*"❤️ [Nombre] te envió un toque"*).
-  - Notificación de dinamización diaria (*"✨ [Nombre] ya respondió al reto de hoy. ¡Descubre qué dijo!"*).
+#### ✅ Criterios de Aceptación (COMPLETADA):
+- [x] **Suscripción VAPID (\$0/mes Web Crypto API):**
+  - Motor criptográfico propio en Cloudflare Workers sin dependencias Node incompatibles: firma VAPID JWT (`ES256` / RFC 8292) y cifrado binario `aes128gcm` (RFC 8291 / RFC 8188) con ECDH P-256 efímero, HKDF-SHA-256 y AES-128-GCM, más generador `pnpm run vapid:generate`.
+  - Service Worker tipado (`src/sw.ts` con estrategia `injectManifest`), supresión inteligente en primer plano cuando la app está enfocada y colapso por `tag` (`renotify: true`).
+  - Almacenamiento multi-dispositivo en PostgreSQL (`push_subscriptions`), reasignación limpia por cambio de sesión y auto-purga automática ante respuestas `404`/`410 Gone` de APNs/FCM.
+- [x] **Detección de Standalone en iOS y UX *Contextual Soft-Ask*:**
+  - Detección obligatoria de instalación previa en pantalla de inicio (`display-mode: standalone` / `navigator.standalone`) en iOS/iPadOS antes de invocar permisos, desplegando guía visual de 2 pasos en Safari móvil.
+  - Invitación contextual post-acción en la pantalla de espera y modal de Ajustes con botón de aviso de prueba (retardo de 3s en `waitUntil` para bloquear pantalla).
+- [x] **Disparadores de Push (Zero-Leak Estricto):**
+  - Notificación inmediata al recibir un toque de afecto (*"❤️ [Nombre] te envió un toque"*), protegida contra replays de idempotencia.
+  - Notificación de dinamización diaria (*"✨ [Nombre] ya respondió al reto de hoy. ¡Descubre qué dijo!"* al responder primero y *"🎉 ¡Ambos respondieron hoy! Toca para revelar"* al completarse), validada por contrato `SafePushPayloadSchema.strict()` sin filtrar respuestas ni medios.

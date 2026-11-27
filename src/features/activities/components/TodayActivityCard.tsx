@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { CheckCircle2, Clock, Eye, Heart, Lock, Sparkles } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { ACTIVITY_CATEGORY_META } from '../../../../shared'
 import { useCouple } from '../../couple/hooks/useCouple'
 import { useTodayActivity } from '../hooks/useTodayActivity'
@@ -12,12 +12,14 @@ export interface TodayActivityCardProps {
   autoReveal?: boolean
   onSendQuickAffection?: () => void
   isSendingAffection?: boolean
+  waitingFooterSlot?: ReactNode
 }
 
 export function TodayActivityCard({
   autoReveal = false,
   onSendQuickAffection,
   isSendingAffection = false,
+  waitingFooterSlot,
 }: TodayActivityCardProps = {}) {
   const { partner } = useCouple()
   const { activity, isLoading, error, submitAnswer, isSubmitting, submitError } = useTodayActivity()
@@ -154,6 +156,8 @@ export function TodayActivityCard({
               <span>Enviar toque de afecto a {partnerName}</span>
             </button>
           )}
+
+          {waitingFooterSlot}
         </motion.div>
       )}
 
