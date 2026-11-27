@@ -7,6 +7,9 @@ import { activitiesRouter } from './features/activities/activities.routes'
 import { affectionRouter } from './features/affection/affection.routes'
 import { authRouter } from './features/auth/auth.routes'
 import { coupleRouter } from './features/couple/couple.routes'
+import { mediaRouter } from './features/media/media.routes'
+import { MediaService } from './features/media/media.service'
+import { createMediaSigner } from './features/media/r2.signer'
 import { realtimeRouter } from './features/realtime/realtime.routes'
 import { AuthService } from './features/auth/auth.service'
 
@@ -123,14 +126,24 @@ app.route('/api/couple', coupleRouter)
 app.route('/api/activities', activitiesRouter)
 app.route('/api/affection', affectionRouter)
 app.route('/api/realtime', realtimeRouter)
+app.route('/api/media', mediaRouter)
 
-// Handler de Cloudflare Cron Trigger (§2.6) para limpieza de datos caducados
+// Handler de Cloudflare Cron Trigger (§2.6) para limpieza de datos caducados y collages semanales
 export const scheduledHandler = async (_event: any, env: Bindings, _ctx?: any) => {
   const dbUrl = env?.DATABASE_URL || process.env.DATABASE_URL
   const db = getDb(dbUrl)
   const authService = new AuthService(db)
   const result = await authService.cleanupExpiredAuthData()
   console.info('[Scheduled] Limpieza periódica de auth ejecutada:', result)
+
+  try {
+    const mediaService = new MediaService(db, createMediaSigner(env))
+    const collageResult = await mediaService.compileAllCouplesWeeklyCollages()
+    console.info('[Scheduled] Compilación de collages semanales ejecutada:', collageResult)
+  } catch (error) {
+    console.error('[Scheduled] Error compilando collages semanales:', error)
+  }
+
   return result
 }
 
