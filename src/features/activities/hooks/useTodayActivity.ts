@@ -6,7 +6,7 @@ import { useAuth } from '../../auth/hooks/useAuth'
 import { useCouple } from '../../couple/hooks/useCouple'
 import { ActivitiesApiError, activitiesApi } from '../api/activities.api'
 import { activitiesStore } from '../store/activities.store'
-import { mediaApi, pendingMediaStore } from '../../media'
+import { WEEKLY_COLLAGES_QUERY_KEY, mediaApi, pendingMediaStore } from '../../media'
 import { ACTIVITY_HISTORY_QUERY_KEY } from './useActivityHistory'
 
 export const TODAY_ACTIVITY_QUERY_KEY = ['activities', 'today'] as const
@@ -84,6 +84,7 @@ export function useTodayActivity() {
       if (synced > 0) {
         await queryClient.invalidateQueries({ queryKey: TODAY_ACTIVITY_QUERY_KEY })
         await queryClient.invalidateQueries({ queryKey: ACTIVITY_HISTORY_QUERY_KEY })
+        await queryClient.invalidateQueries({ queryKey: WEEKLY_COLLAGES_QUERY_KEY })
       }
     }
 
@@ -181,6 +182,7 @@ export function useTodayActivity() {
         await activitiesStore.flushOutbox()
         await queryClient.invalidateQueries({ queryKey: TODAY_ACTIVITY_QUERY_KEY })
         await queryClient.invalidateQueries({ queryKey: ACTIVITY_HISTORY_QUERY_KEY })
+        await queryClient.invalidateQueries({ queryKey: WEEKLY_COLLAGES_QUERY_KEY })
       }
 
       return { clientMutationId: outboxItem.client_mutation_id }
