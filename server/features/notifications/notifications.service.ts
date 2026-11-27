@@ -72,7 +72,7 @@ export class NotificationsService implements ActivityPushNotifier {
   constructor(
     db: DbClient,
     private readonly vapidConfig: VapidConfig | null,
-    private readonly fetchImpl: typeof fetch = fetch,
+    private readonly fetchImpl: typeof fetch = (input, init) => globalThis.fetch(input, init),
     private readonly sleepImpl: (ms: number) => Promise<void> = defaultSleep
   ) {
     this.repo = new NotificationsRepository(db)
@@ -305,11 +305,16 @@ export class NotificationsService implements ActivityPushNotifier {
     const startMs = Date.now()
     const deliveredEndpoints: string[] = []
     const staleEndpoints: string[] = []
+    const statusCodes: number[] = []
+    const errorNames: string[] = []
     let failed = 0
+
+    // Evita `Illegal invocation` en Cloudflare Workers (workerd exige `this === globalThis` en `fetch`)
+    const fetchFn = this.fetchImpl
 
     const results = await Promise.allSettled(
       entries.map(async ({ subscription, request }) => {
-        const res = await this.fetchImpl(request.url, {
+        const res = await fetchFn(request.url, {
           method: request.method,
           headers: request.headers,
           body: request.body,
@@ -321,10 +326,13 @@ export class NotificationsService implements ActivityPushNotifier {
     for (const outcome of results) {
       if (outcome.status === 'rejected') {
         failed++
+        const err = outcome.reason
+        errorNames.push(err instanceof Error ? err.name : 'UnknownError')
         continue
       }
 
       const { endpoint, status, ok } = outcome.value
+      statusCodes.push(status)
       if (ok) {
         deliveredEndpoints.push(endpoint)
       } else if (status === 404 || status === 410) {
@@ -354,6 +362,8 @@ export class NotificationsService implements ActivityPushNotifier {
       sent_count: deliveredEndpoints.length,
       pruned_count: pruned,
       failed_count: failed,
+      status_codes: statusCodes,
+      ...(errorNames.length > 0 ? { error_names: errorNames } : {}),
       latency_ms: Date.now() - startMs,
     })
 
@@ -369,7 +379,7 @@ export class NotificationsService implements ActivityPushNotifier {
 export function createNotificationsService(
   db: DbClient,
   env?: VapidEnvBindings,
-  fetchImpl: typeof fetch = fetch
+  fetchImpl: typeof fetch = (input, init) => globalThis.fetch(input, init)
 ): NotificationsService {
   return new NotificationsService(db, resolveVapidConfig(env), fetchImpl)
 }
