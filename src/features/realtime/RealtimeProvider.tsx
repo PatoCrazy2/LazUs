@@ -4,6 +4,7 @@ import { ACTIVITY_HISTORY_QUERY_KEY } from '../activities/hooks/useActivityHisto
 import { TODAY_ACTIVITY_QUERY_KEY } from '../activities/hooks/useTodayActivity'
 import { AUTH_QUERY_KEY, useAuth } from '../auth/hooks/useAuth'
 import { COUPLE_CURRENT_QUERY_KEY, useCouple } from '../couple/hooks/useCouple'
+import { WEEKLY_COLLAGES_QUERY_KEY } from '../media'
 import { CoupleRealtimeClient, type RealtimeConnectionStatus } from './realtime.client'
 import {
   type AffectionPulse,
@@ -56,6 +57,7 @@ export function RealtimeProvider({ children }: RealtimeProviderProps) {
           },
           invalidateActivityHistory: () => {
             void queryClient.invalidateQueries({ queryKey: ACTIVITY_HISTORY_QUERY_KEY })
+            void queryClient.invalidateQueries({ queryKey: WEEKLY_COLLAGES_QUERY_KEY })
           },
           invalidateCoupleState: () => {
             void queryClient.invalidateQueries({ queryKey: COUPLE_CURRENT_QUERY_KEY })

@@ -4,6 +4,7 @@ import type {
   ActivityOccasion,
   ActivityResponseType,
   ActivityTone,
+  MediaKind,
   MutationType,
   OutboxStatus,
   PromptConfig,
@@ -42,11 +43,22 @@ export interface LocalActivity {
   mySubmissionCompleted: boolean
   partnerSubmissionCompleted: boolean
   myContent?: string
+  myMediaKey?: string | null
   myPayload?: SubmissionPayload | null
   partnerContent?: string // Solo presente si status === 'revealed'
+  partnerMediaKey?: string | null // Solo presente si status === 'revealed'
   partnerPayload?: SubmissionPayload | null // Solo presente si status === 'revealed'
   revealedAt?: string
   syncStatus?: 'synced' | 'pending_sync'
+}
+
+export interface LocalPendingMedia {
+  id: string
+  kind: MediaKind
+  blob: Blob
+  contentType: string
+  sizeBytes: number
+  createdAt: number
 }
 
 export interface LocalOutboxItem {
@@ -67,6 +79,7 @@ export const db = new Dexie('LazUsLocalDB') as Dexie & {
   couple: EntityTable<LocalCouple, 'id'>
   activities: EntityTable<LocalActivity, 'id'>
   outbox: EntityTable<LocalOutboxItem, 'id'>
+  pending_media: EntityTable<LocalPendingMedia, 'id'>
 }
 
 db.version(1).stores({
@@ -74,6 +87,14 @@ db.version(1).stores({
   couple: 'id',
   activities: 'id, logicalDate, status',
   outbox: 'id, client_mutation_id, status, next_retry_at',
+})
+
+db.version(2).stores({
+  profile: 'id, email',
+  couple: 'id',
+  activities: 'id, logicalDate, status',
+  outbox: 'id, client_mutation_id, status, next_retry_at',
+  pending_media: 'id, createdAt',
 })
 
 // Solicitar persistencia al sistema operativo (Safari / Android)

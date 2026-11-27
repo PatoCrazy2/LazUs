@@ -8,6 +8,7 @@ import { AmbientRibbons, UnverifiedEmailBanner } from './features/auth/component
 import { useAuth } from './features/auth/hooks/useAuth'
 import { PairingSettingsModal } from './features/couple/components'
 import { useCouple } from './features/couple/hooks/useCouple'
+import { MomentsGallery } from './features/media'
 import { AffectionHeartOverlay } from './features/realtime/components/AffectionHeartOverlay'
 import { CouplePairedCelebrationOverlay } from './features/realtime/components/CouplePairedCelebrationOverlay'
 import { PartnerPresenceBadge } from './features/realtime/components/PartnerPresenceBadge'
@@ -138,6 +139,7 @@ export function DashboardPage() {
               onSendQuickAffection={handleQuickAffection}
               isSendingAffection={isSendingAffection}
             />
+            <MomentsGallery />
             <ActivityHistoryList />
           </div>
         ) : (

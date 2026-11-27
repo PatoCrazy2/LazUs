@@ -288,11 +288,46 @@ export class ActivitiesService {
         }
         break
       }
+      case 'photo_only': {
+        this.assertValidSubmissionMediaKey(input.media_key, activity.coupleId, 'photo')
+        break
+      }
+      case 'both': {
+        this.assertValidSubmissionMediaKey(input.media_key, activity.coupleId, 'photo')
+        if (!input.content || input.content.trim().length === 0) {
+          throw new ActivityValidationError('Debes añadir un mensaje junto con tu foto')
+        }
+        break
+      }
+      case 'voice': {
+        this.assertValidSubmissionMediaKey(input.media_key, activity.coupleId, 'voice')
+        if (input.payload && input.payload.type !== 'voice') {
+          throw new ActivityValidationError('Metadatos de nota de voz inválidos')
+        }
+        break
+      }
       default: {
         throw new ActivityValidationError(
           `El formato '${activity.responseType}' aún no está habilitado`
         )
       }
+    }
+  }
+
+  private assertValidSubmissionMediaKey(
+    mediaKey: string | undefined,
+    coupleId: string,
+    kind: 'photo' | 'voice'
+  ): void {
+    if (!mediaKey || mediaKey.trim().length === 0) {
+      throw new ActivityValidationError(
+        kind === 'photo'
+          ? 'Debes subir una fotografía para responder esta actividad'
+          : 'Debes grabar una nota de voz para responder esta actividad'
+      )
+    }
+    if (mediaKey.includes('..') || !mediaKey.startsWith(`couples/${coupleId}/${kind}/`)) {
+      throw new ActivityForbiddenError('El archivo multimedia no pertenece a tu pareja')
     }
   }
 }

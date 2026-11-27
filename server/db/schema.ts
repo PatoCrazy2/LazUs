@@ -51,6 +51,7 @@ export const activityResponseTypeEnum = pgEnum('activity_response_type', [
   'both',
   'voice',
 ])
+export const weeklyCollageStatusEnum = pgEnum('weekly_collage_status', ['ready', 'rendered'])
 
 // 1. Usuarios
 export const users = pgTable('users', {
@@ -283,5 +284,29 @@ export const authTokens = pgTable(
   (t) => [
     index('idx_auth_tokens_hash').on(t.tokenHash),
     index('idx_auth_tokens_user').on(t.userId),
+  ]
+)
+
+// 12. Collages Semanales ("Nuestros Momentos")
+export const weeklyCollages = pgTable(
+  'weekly_collages',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    coupleId: uuid('couple_id')
+      .references(() => couples.id, { onDelete: 'cascade' })
+      .notNull(),
+    weekStartDate: varchar('week_start_date', { length: 10 }).notNull(), // YYYY-MM-DD (Lunes)
+    weekEndDate: varchar('week_end_date', { length: 10 }).notNull(), // YYYY-MM-DD (Domingo)
+    status: weeklyCollageStatusEnum('status').default('ready').notNull(),
+    mediaKey: varchar('media_key', { length: 512 }),
+    highlights: jsonb('highlights').default([]).notNull(),
+    activitiesCount: integer('activities_count').default(0).notNull(),
+    renderedAt: timestamp('rendered_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('idx_weekly_collages_couple_week').on(t.coupleId, t.weekStartDate),
+    index('idx_weekly_collages_couple_created').on(t.coupleId, t.createdAt),
   ]
 )
