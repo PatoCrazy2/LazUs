@@ -1,4 +1,6 @@
+import { CloudUpload } from 'lucide-react'
 import type { SubmissionItem } from '../../../../shared'
+import { PrivateMediaImage, PrivateVoicePlayer } from '../../media'
 import { MusicPlayerCard } from './MusicPlayerCard'
 
 interface SubmissionPreviewProps {
@@ -22,9 +24,14 @@ export function SubmissionPreview({
   }
 
   const payload = submission.payload
+  const mediaKey = submission.media_key
+  const isVoiceMedia =
+    payload?.type === 'voice' || (typeof mediaKey === 'string' && mediaKey.includes('/voice/'))
+  const isPendingOfflineMedia =
+    !mediaKey && (payload?.type === 'photo' || payload?.type === 'voice')
 
   return (
-    <div className="rounded-xl border border-[#EAEAEA] bg-white p-3.5 space-y-2">
+    <div className="rounded-xl border border-[#EAEAEA] bg-white p-3.5 space-y-2.5">
       <div className="flex items-center justify-between">
         <span
           className="text-[11px] font-semibold uppercase tracking-wide"
@@ -33,6 +40,29 @@ export function SubmissionPreview({
           {label}
         </span>
       </div>
+
+      {mediaKey && !isVoiceMedia && (
+        <PrivateMediaImage mediaKey={mediaKey} alt={`Fotografía de ${label}`} />
+      )}
+
+      {mediaKey && isVoiceMedia && (
+        <PrivateVoicePlayer
+          mediaKey={mediaKey}
+          durationSec={payload?.type === 'voice' ? payload.duration_sec : undefined}
+          accentColor={accentColor}
+        />
+      )}
+
+      {isPendingOfflineMedia && (
+        <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50/80 px-3 py-2.5 flex items-center gap-2 text-xs text-zinc-500">
+          <CloudUpload className="w-4 h-4 text-zinc-400 shrink-0" />
+          <span>
+            {payload?.type === 'voice'
+              ? 'Nota de voz guardada · Se sincronizará al recuperar señal'
+              : 'Fotografía guardada · Se sincronizará al recuperar señal'}
+          </span>
+        </div>
+      )}
 
       {submission.content && (
         <p className="text-sm text-[#18181B] whitespace-pre-wrap leading-relaxed">
