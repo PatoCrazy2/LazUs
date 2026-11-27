@@ -310,3 +310,22 @@ export const weeklyCollages = pgTable(
     index('idx_weekly_collages_couple_created').on(t.coupleId, t.createdAt),
   ]
 )
+
+// 13. Suscripciones Web Push (Por dispositivo)
+export const pushSubscriptions = pgTable(
+  'push_subscriptions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .references(() => users.id, { onDelete: 'cascade' })
+      .notNull(),
+    endpoint: text('endpoint').unique().notNull(),
+    p256dh: varchar('p256dh', { length: 255 }).notNull(),
+    auth: varchar('auth', { length: 128 }).notNull(),
+    userAgent: varchar('user_agent', { length: 255 }),
+    lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('idx_push_subscriptions_user').on(t.userId)]
+)
