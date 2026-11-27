@@ -6,14 +6,30 @@ import type {
   PromptConfig,
   SubmissionPayload,
 } from '../../../../shared'
+import {
+  PhotoCaptureInput,
+  VoiceRecorderInput,
+  type RecordedVoiceNote,
+  type SelectedPhotoMedia,
+} from '../../media'
 import { useMusicSearch } from '../hooks/useMusicSearch'
 import { MusicPlayerCard } from './MusicPlayerCard'
+
+export interface ActivitySubmitMedia {
+  kind: 'photo' | 'voice'
+  blob: Blob
+  contentType: string
+}
 
 interface ActivityInputsProps {
   responseType: ActivityResponseType
   promptConfig?: PromptConfig
   isSubmitting: boolean
-  onSubmit: (data: { content?: string; payload?: SubmissionPayload }) => Promise<void>
+  onSubmit: (data: {
+    content?: string
+    payload?: SubmissionPayload
+    media?: ActivitySubmitMedia
+  }) => Promise<void>
 }
 
 export function ActivityInputs({
@@ -31,6 +47,9 @@ export function ActivityInputs({
   const [musicQuery, setMusicQuery] = useState('')
   const [selectedTrack, setSelectedTrack] = useState<MusicTrack | null>(null)
   const [musicNote, setMusicNote] = useState('')
+  const [selectedPhoto, setSelectedPhoto] = useState<SelectedPhotoMedia | null>(null)
+  const [photoCaption, setPhotoCaption] = useState('')
+  const [recordedVoice, setRecordedVoice] = useState<RecordedVoiceNote | null>(null)
 
   const { tracks, isSearching } = useMusicSearch(musicQuery)
 
@@ -84,6 +103,57 @@ export function ActivityInputs({
         })
         break
       }
+      case 'photo_only': {
+        if (!selectedPhoto) return
+        await onSubmit({
+          payload: {
+            type: 'photo',
+            width: selectedPhoto.width,
+            height: selectedPhoto.height,
+            mime_type: selectedPhoto.contentType,
+          },
+          media: {
+            kind: 'photo',
+            blob: selectedPhoto.blob,
+            contentType: selectedPhoto.contentType,
+          },
+        })
+        break
+      }
+      case 'both': {
+        if (!selectedPhoto || !photoCaption.trim()) return
+        await onSubmit({
+          content: photoCaption.trim(),
+          payload: {
+            type: 'photo',
+            width: selectedPhoto.width,
+            height: selectedPhoto.height,
+            mime_type: selectedPhoto.contentType,
+          },
+          media: {
+            kind: 'photo',
+            blob: selectedPhoto.blob,
+            contentType: selectedPhoto.contentType,
+          },
+        })
+        break
+      }
+      case 'voice': {
+        if (!recordedVoice) return
+        await onSubmit({
+          payload: {
+            type: 'voice',
+            duration_sec: recordedVoice.durationSec,
+            mime_type: recordedVoice.mimeType,
+          },
+          media: {
+            kind: 'voice',
+            blob: recordedVoice.blob,
+            contentType: recordedVoice.mimeType,
+          },
+        })
+        break
+      }
     }
   }
 
@@ -99,6 +169,12 @@ export function ActivityInputs({
         return myAnswer.trim().length > 0 && guessedAnswer.trim().length > 0
       case 'music':
         return selectedTrack !== null
+      case 'photo_only':
+        return selectedPhoto !== null
+      case 'both':
+        return selectedPhoto !== null && photoCaption.trim().length > 0
+      case 'voice':
+        return recordedVoice !== null
       default:
         return false
     }
@@ -291,6 +367,40 @@ export function ActivityInputs({
             </div>
           )}
         </div>
+      )}
+
+      {responseType === 'photo_only' && (
+        <PhotoCaptureInput
+          value={selectedPhoto}
+          onChange={setSelectedPhoto}
+          disabled={isSubmitting}
+        />
+      )}
+
+      {responseType === 'both' && (
+        <div className="space-y-3">
+          <PhotoCaptureInput
+            value={selectedPhoto}
+            onChange={setSelectedPhoto}
+            disabled={isSubmitting}
+          />
+          <textarea
+            value={photoCaption}
+            onChange={(e) => setPhotoCaption(e.target.value)}
+            maxLength={500}
+            rows={3}
+            placeholder="Añade un mensaje para acompañar tu foto..."
+            className="w-full rounded-xl border border-[#EAEAEA] bg-white/80 px-3.5 py-2.5 text-sm text-[#18181B] placeholder:text-zinc-400 focus:outline-none focus:border-[#18181B] transition-colors resize-none"
+          />
+        </div>
+      )}
+
+      {responseType === 'voice' && (
+        <VoiceRecorderInput
+          value={recordedVoice}
+          onChange={setRecordedVoice}
+          disabled={isSubmitting}
+        />
       )}
 
       <button

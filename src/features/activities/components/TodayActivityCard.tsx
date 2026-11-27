@@ -99,11 +99,12 @@ export function TodayActivityCard({
             responseType={activity.response_type}
             promptConfig={activity.prompt_config}
             isSubmitting={isSubmitting}
-            onSubmit={async ({ content, payload }) => {
+            onSubmit={async ({ content, payload, media }) => {
               await submitAnswer({
                 activityId: activity.id,
                 content,
                 payload,
+                media,
               })
             }}
           />

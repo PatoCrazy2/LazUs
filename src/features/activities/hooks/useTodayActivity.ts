@@ -6,6 +6,7 @@ import { useAuth } from '../../auth/hooks/useAuth'
 import { useCouple } from '../../couple/hooks/useCouple'
 import { ActivitiesApiError, activitiesApi } from '../api/activities.api'
 import { activitiesStore } from '../store/activities.store'
+import { mediaApi, pendingMediaStore } from '../../media'
 import { ACTIVITY_HISTORY_QUERY_KEY } from './useActivityHistory'
 
 export const TODAY_ACTIVITY_QUERY_KEY = ['activities', 'today'] as const
@@ -50,7 +51,7 @@ export function useTodayActivity() {
             my_submission: local.mySubmissionCompleted
               ? {
                   content: local.myContent ?? null,
-                  media_key: null,
+                  media_key: local.myMediaKey ?? null,
                   payload: local.myPayload ?? null,
                   completed_at: new Date().toISOString(),
                 }
@@ -60,7 +61,7 @@ export function useTodayActivity() {
               ? {
                   partner_submission: {
                     content: local.partnerContent ?? null,
-                    media_key: null,
+                    media_key: local.partnerMediaKey ?? null,
                     payload: local.partnerPayload ?? null,
                     completed_at: local.revealedAt ?? new Date().toISOString(),
                   },
@@ -105,17 +106,59 @@ export function useTodayActivity() {
       activityId: string
       content?: string
       payload?: SubmissionPayload
+      media?: {
+        kind: 'photo' | 'voice'
+        blob: Blob
+        contentType: string
+      }
     }) => {
+      let mediaKey: string | undefined
+      let pendingMediaId: string | undefined
+
+      if (params.media) {
+        const isOnline = typeof navigator === 'undefined' || navigator.onLine
+        if (isOnline) {
+          try {
+            const uploaded = await mediaApi.uploadMediaDirect({
+              kind: params.media.kind,
+              blob: params.media.blob,
+              contentType: params.media.contentType,
+              activityId: params.activityId,
+            })
+            mediaKey = uploaded.mediaKey
+          } catch {
+            // Si la red cae durante la subida, respaldamos el Blob comprimido en pending_media
+            const saved = await pendingMediaStore.savePendingMedia({
+              kind: params.media.kind,
+              blob: params.media.blob,
+              contentType: params.media.contentType,
+            })
+            pendingMediaId = saved.id
+          }
+        } else {
+          // Modo offline: guardar Blob comprimido (~350-500 KB) en Dexie con purga automática al sincronizar
+          const saved = await pendingMediaStore.savePendingMedia({
+            kind: params.media.kind,
+            blob: params.media.blob,
+            contentType: params.media.contentType,
+          })
+          pendingMediaId = saved.id
+        }
+      }
+
       // 1. Guardar optimistamente en Dexie + encolar en Outbox con client_mutation_id estable
       await activitiesStore.saveOptimisticSubmission(
         params.activityId,
         params.content,
-        params.payload
+        params.payload,
+        mediaKey
       )
 
       const outboxItem = await enqueueMutation('SUBMIT_ACTIVITY', {
         activity_id: params.activityId,
         content: params.content,
+        media_key: mediaKey,
+        pending_media_id: pendingMediaId,
         payload: params.payload,
       })
 
@@ -126,7 +169,7 @@ export function useTodayActivity() {
           ...current,
           my_submission: {
             content: params.content ?? null,
-            media_key: null,
+            media_key: mediaKey ?? null,
             payload: params.payload ?? null,
             completed_at: new Date().toISOString(),
           },
