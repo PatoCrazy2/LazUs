@@ -26,8 +26,8 @@
 [x] Hito 2: Emparejamiento de Pareja y NFC Linking (feature/couple)
 [x] Hito 3: Catálogo de Actividades y Blind Reveal (feature/activities)
 [x] Hito 4: Tiempo Real con Durable Objects (feature/realtime)
-[ ] Hito 5: Rutas NFC y Toque de Afecto Háptico (feature/nfc)
-[ ] Hito 6: Almacenamiento en R2 y Collage Semanal (feature/media)
+[x] Hito 5: Rutas NFC y Toque de Afecto Háptico (feature/nfc)
+[x] Hito 6: Almacenamiento en R2 y Collage Semanal (feature/media)
 [ ] Hito 7: Notificaciones Web Push (feature/notifications)
 ```
 
@@ -160,21 +160,21 @@
 
 ---
 
-### [ ] Hito 6: Almacenamiento en R2 (Fotos, Notas de Voz) y Collage Semanal (`feature/media`)
+### [✅] Hito 6: Almacenamiento en R2 (Fotos, Notas de Voz) y Collage Semanal (`feature/media`)
 
 **Objetivo:** Manejar fotografías y notas de voz privadas (`photo_only`, `both`, `voice`) a coste de transferencia $0 y generar el resumen semanal compartible.
 
-#### Criterios de Aceptación:
-- [ ] **Subida Directa a R2:**
-  - Endpoint `POST /api/media/upload-url` que devuelve URLs prefirmadas válidas por 10 minutos.
-  - El navegador sube la foto directamente a Cloudflare R2 sin saturar el Worker.
-- [ ] **Visualización Privada:**
-  - Bucket R2 estrictamente privado.
-  - Enlaces de visualización generados con URLs firmadas de corta duración ($\le$ 15 min).
-- [ ] **Generador del Collage Semanal:**
-  - Al completar el ciclo semanal (ej. cada domingo), se compilan las fotos y mejores respuestas de la semana en una tarjeta visual estética (estilo Yope).
+#### ✅ Criterios de Aceptación (COMPLETADA):
+- [x] **Subida Directa a R2:**
+  - Endpoint `POST /api/media/upload-url` con firma AWS Signature V4 (Web Crypto puro) que devuelve URLs prefirmadas válidas por $\le$ 10 minutos (+ fallback automático de desarrollo local).
+  - El navegador comprime fotos en HD (1920 px WebP @ 0.85) y graba notas de voz (`MediaRecorder` compatible iOS/Android), subiendo directamente a Cloudflare R2 sin saturar el Worker, con respaldo offline en Dexie (`pending_media`) y purga inmediata al sincronizar.
+- [x] **Visualización Privada (Zero-Leak):**
+  - Bucket R2 estrictamente privado con aislamiento `couples/<couple_id>/...`.
+  - Enlaces de visualización generados vía `POST /api/media/view-url` con URLs firmadas de corta duración ($\le$ 15 min) y verificación estricta Zero-Leak en PostgreSQL (`status === 'revealed'` para archivos de la pareja).
+- [x] **Generador del Collage Semanal:**
+  - Arquitectura híbrida \$0/mes: el backend compila la receta semanal en `weekly_collages` (perezosamente y vía Cron) y el cliente renderiza la tarjeta 9:16 (1080×1920 PNG, temas Claro/Noche) en HTML5 Canvas 2D y la persiste en R2.
   - Los collages se conservan en la sección *"Nuestros Momentos"*.
-  - Botón nativo para descargar la imagen o compartirla en Instagram Stories / WhatsApp mediante la `Web Share API`.
+  - Botón nativo para compartir en Instagram Stories / WhatsApp mediante la `Web Share API` con fallback automático de descarga PNG.
 
 ---
 
