@@ -28,6 +28,7 @@
     }
   ],
   "vars": {
-    "ENVIRONMENT": "development"
+    "ENVIRONMENT": "development",
+    "R2_BUCKET_NAME": "lazus-media"
   }
 }

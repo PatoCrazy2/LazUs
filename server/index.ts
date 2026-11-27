@@ -24,6 +24,10 @@ export type Bindings = {
   RESEND_API_KEY?: string
   RESEND_FROM_EMAIL?: string
   APP_BASE_URL?: string
+  R2_ACCOUNT_ID?: string
+  R2_BUCKET_NAME?: string
+  R2_ACCESS_KEY_ID?: string
+  R2_SECRET_ACCESS_KEY?: string
 }
 
 type AppVariables = {

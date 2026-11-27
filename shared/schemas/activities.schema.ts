@@ -92,6 +92,17 @@ export const SubmissionPayloadSchema = z.union([
     type: z.literal('music'),
     track: MusicTrackSchema,
   }),
+  z.object({
+    type: z.literal('voice'),
+    duration_sec: z.number().min(0.5).max(60),
+    mime_type: z.string().min(1).max(100),
+  }),
+  z.object({
+    type: z.literal('photo'),
+    width: z.number().int().positive().optional(),
+    height: z.number().int().positive().optional(),
+    mime_type: z.string().min(1).max(100).optional(),
+  }),
 ])
 export type SubmissionPayload = z.infer<typeof SubmissionPayloadSchema>
 
