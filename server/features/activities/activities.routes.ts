@@ -3,6 +3,10 @@ import { zValidator } from '@hono/zod-validator'
 import { SubmitActivityInputSchema } from '../../../shared'
 import { getDb, type DbClient } from '../../db'
 import { authMiddleware, type AuthContextVariables } from '../auth/auth.middleware'
+import {
+  createNotificationsService,
+  type VapidEnvBindings,
+} from '../notifications/notifications.service'
 import { createRealtimePublisher, dispatchRealtimeTask } from '../realtime/realtime.publisher'
 import {
   ActivityForbiddenError,
@@ -15,8 +19,14 @@ import { ActivitiesService } from './activities.service'
 function getActivitiesService(c: any): ActivitiesService {
   const db: DbClient = c.get('db') || getDb(c.env?.DATABASE_URL || process.env.DATABASE_URL)
   const publisher = createRealtimePublisher(c.env?.COUPLE_ROOM)
-  return new ActivitiesService(db, () => new Date(), fetch, publisher, (task) =>
-    dispatchRealtimeTask(c, task)
+  const pushNotifier = createNotificationsService(db, c.env)
+  return new ActivitiesService(
+    db,
+    () => new Date(),
+    fetch,
+    publisher,
+    (task) => dispatchRealtimeTask(c, task),
+    pushNotifier
   )
 }
 
@@ -37,7 +47,7 @@ function mapActivityError(c: any, error: unknown) {
 }
 
 export const activitiesRouter = new Hono<{
-  Bindings: {
+  Bindings: VapidEnvBindings & {
     DATABASE_URL?: string
     ENVIRONMENT?: string
     COUPLE_ROOM?: DurableObjectNamespace

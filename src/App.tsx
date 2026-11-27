@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider, useNavigate } from '@tanstack/react-router'
-import { KeyRound, LogOut, Sparkles, User, Users } from 'lucide-react'
+import { Bell, KeyRound, LogOut, Sparkles, User, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { ActivityHistoryList, TodayActivityCard } from './features/activities/components'
 import { FloatingHeartBurst, useSendAffection } from './features/affection'
@@ -9,6 +9,11 @@ import { useAuth } from './features/auth/hooks/useAuth'
 import { PairingSettingsModal } from './features/couple/components'
 import { useCouple } from './features/couple/hooks/useCouple'
 import { MomentsGallery } from './features/media'
+import {
+  ContextualPushPrompt,
+  PushSettingsModal,
+  usePushNotifications,
+} from './features/notifications'
 import { AffectionHeartOverlay } from './features/realtime/components/AffectionHeartOverlay'
 import { CouplePairedCelebrationOverlay } from './features/realtime/components/CouplePairedCelebrationOverlay'
 import { PartnerPresenceBadge } from './features/realtime/components/PartnerPresenceBadge'
@@ -34,10 +39,12 @@ export function DashboardPage() {
   const { partner } = useCouple()
   const { isPartnerOnline, affectionPulse, pairingCelebration } = useCoupleRealtime()
   const { sendAffection, isSending: isSendingAffection } = useSendAffection()
+  const { isSubscribedOnDevice, uiState: pushUiState } = usePushNotifications()
   const { tapIntent } = authenticatedRoute.useSearch()
   const navigate = useNavigate()
 
   const [isPairingModalOpen, setIsPairingModalOpen] = useState(false)
+  const [isPushModalOpen, setIsPushModalOpen] = useState(false)
   const [sentBurstId, setSentBurstId] = useState<number | null>(null)
   const [autoRevealLatched, setAutoRevealLatched] = useState(false)
 
@@ -79,6 +86,28 @@ export function DashboardPage() {
         </span>
 
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsPushModalOpen(true)}
+            aria-label="Configurar notificaciones privadas"
+            className="relative p-2 rounded-lg bg-white hover:bg-zinc-50 text-zinc-600 hover:text-[#18181B] transition-colors cursor-pointer border border-[#EAEAEA]"
+            title="Avisos Privados"
+          >
+            <Bell className="w-4 h-4" />
+            {isSubscribedOnDevice && (
+              <span
+                aria-hidden="true"
+                className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500"
+              />
+            )}
+            {(pushUiState === 'prompt' || pushUiState === 'ios_needs_install') && (
+              <span
+                aria-hidden="true"
+                className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[#FF5C7A]"
+              />
+            )}
+          </button>
+
           <button
             type="button"
             onClick={() => setIsPairingModalOpen(true)}
@@ -138,6 +167,12 @@ export function DashboardPage() {
               autoReveal={autoRevealLatched || tapIntent === 'reveal'}
               onSendQuickAffection={handleQuickAffection}
               isSendingAffection={isSendingAffection}
+              waitingFooterSlot={
+                <ContextualPushPrompt
+                  partnerName={partner.display_name}
+                  variant="post_submission"
+                />
+              }
             />
             <MomentsGallery />
             <ActivityHistoryList />
@@ -169,6 +204,13 @@ export function DashboardPage() {
       <PairingSettingsModal
         isOpen={isPairingModalOpen && !partner}
         onClose={() => setIsPairingModalOpen(false)}
+      />
+
+      {/* Push Notifications Settings Modal */}
+      <PushSettingsModal
+        isOpen={isPushModalOpen}
+        onClose={() => setIsPushModalOpen(false)}
+        partnerName={partner?.display_name}
       />
     </div>
   )

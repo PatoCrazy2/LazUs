@@ -5,10 +5,14 @@ import { SendAffectionInputSchema } from '../../../shared'
 import { getDb, type DbClient } from '../../db'
 import { affectionEvents, coupleMembers, couples, idempotencyKeys } from '../../db/schema'
 import { authMiddleware, type AuthContextVariables } from '../auth/auth.middleware'
+import {
+  createNotificationsService,
+  type VapidEnvBindings,
+} from '../notifications/notifications.service'
 import { createRealtimePublisher, dispatchRealtimeTask } from '../realtime/realtime.publisher'
 
 export const affectionRouter = new Hono<{
-  Bindings: {
+  Bindings: VapidEnvBindings & {
     DATABASE_URL?: string
     ENVIRONMENT?: string
     COUPLE_ROOM?: DurableObjectNamespace
@@ -102,19 +106,23 @@ affectionRouter.post(
 
     if (!txResult.isReplay) {
       const publisher = createRealtimePublisher(c.env?.COUPLE_ROOM)
+      const notificationsService = createNotificationsService(db, c.env)
       await dispatchRealtimeTask(
         c,
-        publisher.publish({
-          coupleId: membership.coupleId,
-          audience: 'partner_only',
-          excludeUserId: user.id,
-          event: {
-            type: 'affection_received',
-            senderUserId: user.id,
-            eventType: data.event_type,
-            timestamp: txResult.createdAt ?? new Date().toISOString(),
-          },
-        })
+        Promise.allSettled([
+          publisher.publish({
+            coupleId: membership.coupleId,
+            audience: 'partner_only',
+            excludeUserId: user.id,
+            event: {
+              type: 'affection_received',
+              senderUserId: user.id,
+              eventType: data.event_type,
+              timestamp: txResult.createdAt ?? new Date().toISOString(),
+            },
+          }),
+          notificationsService.notifyPartnerAffection(membership.coupleId, user.id),
+        ])
       )
     }
 
